@@ -3,14 +3,19 @@
 This module performs the complete preprocessing pipeline used by the
 project:
 
-1. Load the raw OFR Financial Stress Index data.
+1. Load and validate the raw OFR Financial Stress Index data.
 2. Create chronological train, validation and test splits.
 3. Create the five-day future stress-change target inside each split.
 4. Learn class thresholds exclusively from the training data.
 5. Standardize all numerical features using training statistics only.
 6. Convert the time series into 60-day sliding windows.
 
-The preprocessing is intentionally designed to avoid data leakage.
+Validation and test windows may use observations from the immediately
+preceding split as historical context. Only the target date determines
+which split a sample belongs to.
+
+This preserves all possible prediction dates without introducing
+future information.
 """
 
 from __future__ import annotations
@@ -88,21 +93,19 @@ class PreparedOFRData:
 
 
 # ---------------------------------------------------------------------
-# Basic preparation
+# Raw-data validation
 # ---------------------------------------------------------------------
 
 
 def clean_raw_data(data: pd.DataFrame) -> pd.DataFrame:
-    """Validate and prepare the raw OFR dataset.
-
-    The downloaded OFR dataset is already very clean. This function
-    nevertheless performs explicit checks so that the project does not
-    silently rely on assumptions about the source data.
-    """
+    """Validate and prepare the raw OFR dataset."""
 
     data = data.copy()
 
-    required_columns = [DATE_COLUMN, *FEATURE_COLUMNS]
+    required_columns = [
+        DATE_COLUMN,
+        *FEATURE_COLUMNS,
+    ]
 
     missing_columns = [
         column
@@ -164,13 +167,19 @@ def split_chronologically(
     ].copy()
 
     if train.empty:
-        raise ValueError("Training split is empty.")
+        raise ValueError(
+            "Training split is empty."
+        )
 
     if validation.empty:
-        raise ValueError("Validation split is empty.")
+        raise ValueError(
+            "Validation split is empty."
+        )
 
     if test.empty:
-        raise ValueError("Test split is empty.")
+        raise ValueError(
+            "Test split is empty."
+        )
 
     return train, validation, test
 
@@ -186,19 +195,21 @@ def add_future_stress_change(
 ) -> pd.DataFrame:
     """Calculate future financial-stress change inside one split.
 
-    For every observation, the mean OFR FSI of the following five
-    observations is calculated.
+    For each observation, the average OFR FSI of the following
+    ``horizon`` observations is calculated.
 
     The current OFR FSI is then subtracted:
 
-        future_change = mean(next 5 OFR FSI values) - current OFR FSI
+        future_change =
+            mean(next n OFR FSI values) - current OFR FSI
 
     Positive values therefore represent increasing future financial
-    stress, while negative values represent decreasing stress.
+    stress. Negative values represent decreasing future stress.
 
-    Target calculation is intentionally performed separately for each
-    chronological split. This prevents future observations from one
-    split being used to create targets in another split.
+    Target calculation is performed separately inside every
+    chronological split. This prevents a training target from using
+    validation observations or a validation target from using test
+    observations.
     """
 
     split = split.copy()
@@ -206,19 +217,23 @@ def add_future_stress_change(
     future_values = pd.concat(
         [
             split["OFR FSI"].shift(-step)
-            for step in range(1, horizon + 1)
+            for step in range(
+                1,
+                horizon + 1,
+            )
         ],
         axis=1,
     )
 
-    # skipna=False ensures that all five future observations must exist.
+    # All future observations must exist.
     future_mean = future_values.mean(
         axis=1,
         skipna=False,
     )
 
     split[FUTURE_CHANGE_COLUMN] = (
-        future_mean - split["OFR FSI"]
+        future_mean
+        - split["OFR FSI"]
     )
 
     return split
@@ -227,7 +242,7 @@ def add_future_stress_change(
 def calculate_training_thresholds(
     train: pd.DataFrame,
 ) -> tuple[float, float]:
-    """Learn the three class boundaries exclusively from training data."""
+    """Learn class boundaries exclusively from training targets."""
 
     training_changes = train[
         FUTURE_CHANGE_COLUMN
@@ -235,18 +250,26 @@ def calculate_training_thresholds(
 
     if training_changes.empty:
         raise ValueError(
-            "No valid future stress changes are available in training data."
+            "No valid future stress changes are available "
+            "in the training data."
         )
 
     low_threshold = float(
-        training_changes.quantile(1 / 3)
+        training_changes.quantile(
+            1 / 3
+        )
     )
 
     high_threshold = float(
-        training_changes.quantile(2 / 3)
+        training_changes.quantile(
+            2 / 3
+        )
     )
 
-    return low_threshold, high_threshold
+    return (
+        low_threshold,
+        high_threshold,
+    )
 
 
 def add_target_classes(
@@ -275,36 +298,49 @@ def add_target_classes(
         FUTURE_CHANGE_COLUMN
     ].notna()
 
-    changes = split.loc[
-        valid_mask,
-        FUTURE_CHANGE_COLUMN,
-    ]
-
-    target.loc[
-        valid_mask & (
+    decrease_mask = (
+        valid_mask
+        & (
             split[FUTURE_CHANGE_COLUMN]
             <= low_threshold
         )
-    ] = 0
+    )
 
-    target.loc[
-        valid_mask & (
+    stable_mask = (
+        valid_mask
+        & (
             split[FUTURE_CHANGE_COLUMN]
             > low_threshold
-        ) & (
+        )
+        & (
             split[FUTURE_CHANGE_COLUMN]
             < high_threshold
         )
-    ] = 1
+    )
 
-    target.loc[
-        valid_mask & (
+    increase_mask = (
+        valid_mask
+        & (
             split[FUTURE_CHANGE_COLUMN]
             >= high_threshold
         )
+    )
+
+    target.loc[
+        decrease_mask
+    ] = 0
+
+    target.loc[
+        stable_mask
+    ] = 1
+
+    target.loc[
+        increase_mask
     ] = 2
 
-    split[TARGET_COLUMN] = target
+    split[
+        TARGET_COLUMN
+    ] = target
 
     return split
 
@@ -312,6 +348,35 @@ def add_target_classes(
 # ---------------------------------------------------------------------
 # Feature scaling
 # ---------------------------------------------------------------------
+
+
+def fit_scaler(
+    train: pd.DataFrame,
+) -> StandardScaler:
+    """Fit the feature scaler exclusively on training observations."""
+
+    scaler = StandardScaler()
+
+    scaler.fit(
+        train[
+            FEATURE_COLUMNS
+        ]
+    )
+
+    return scaler
+
+
+def transform_features(
+    data: pd.DataFrame,
+    scaler: StandardScaler,
+) -> np.ndarray:
+    """Apply an already fitted scaler to feature columns."""
+
+    return scaler.transform(
+        data[
+            FEATURE_COLUMNS
+        ]
+    )
 
 
 def scale_features(
@@ -324,20 +389,25 @@ def scale_features(
     np.ndarray,
     StandardScaler,
 ]:
-    """Standardize all features without leaking validation/test information."""
+    """Standardize all features without validation/test leakage."""
 
-    scaler = StandardScaler()
-
-    train_scaled = scaler.fit_transform(
-        train[FEATURE_COLUMNS]
+    scaler = fit_scaler(
+        train
     )
 
-    validation_scaled = scaler.transform(
-        validation[FEATURE_COLUMNS]
+    train_scaled = transform_features(
+        train,
+        scaler,
     )
 
-    test_scaled = scaler.transform(
-        test[FEATURE_COLUMNS]
+    validation_scaled = transform_features(
+        validation,
+        scaler,
+    )
+
+    test_scaled = transform_features(
+        test,
+        scaler,
     )
 
     return (
@@ -349,7 +419,7 @@ def scale_features(
 
 
 # ---------------------------------------------------------------------
-# Sliding windows
+# Sliding-window helpers
 # ---------------------------------------------------------------------
 
 
@@ -358,11 +428,15 @@ def create_sequences(
     targets: pd.Series,
     dates: pd.Series,
     window_size: int = WINDOW_SIZE,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Create fixed-length time-series windows.
+) -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
+    """Create windows when no earlier external context is available.
 
-    Every sample contains the previous 60 observations including the
-    observation on the prediction date.
+    This function is mainly used for the training split and for unit
+    tests.
 
     Output shape:
 
@@ -374,31 +448,58 @@ def create_sequences(
     y = []
     sample_dates = []
 
-    target_values = targets.to_numpy()
-    date_values = dates.to_numpy()
+    target_values = (
+        targets
+        .reset_index(drop=True)
+        .to_numpy()
+    )
+
+    date_values = (
+        dates
+        .reset_index(drop=True)
+        .to_numpy()
+    )
 
     for end_index in range(
         window_size - 1,
         len(features),
     ):
-        target_value = target_values[end_index]
+        target_value = (
+            target_values[
+                end_index
+            ]
+        )
 
-        # The final five observations of each split have no valid target.
-        if pd.isna(target_value):
+        if pd.isna(
+            target_value
+        ):
             continue
 
         start_index = (
-            end_index - window_size + 1
+            end_index
+            - window_size
+            + 1
         )
 
         window = features[
-            start_index:end_index + 1
+            start_index:
+            end_index + 1
         ]
 
-        X.append(window)
-        y.append(int(target_value))
+        X.append(
+            window
+        )
+
+        y.append(
+            int(
+                target_value
+            )
+        )
+
         sample_dates.append(
-            date_values[end_index]
+            date_values[
+                end_index
+            ]
         )
 
     return (
@@ -410,7 +511,149 @@ def create_sequences(
             y,
             dtype=np.int64,
         ),
-        np.asarray(sample_dates),
+        np.asarray(
+            sample_dates,
+        ),
+    )
+
+
+def create_sequences_with_history(
+    historical_features: np.ndarray,
+    current_features: np.ndarray,
+    current_targets: pd.Series,
+    current_dates: pd.Series,
+    window_size: int = WINDOW_SIZE,
+) -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
+    """Create windows for validation/test using earlier observations.
+
+    A validation or test prediction may use observations that occurred
+    before the split boundary because those observations were already
+    known at prediction time.
+
+    Only the target date determines split membership.
+
+    Example
+    -------
+    The first test observation on 2020-01-02 may use the final
+    59 trading days of 2019 as historical context. It may never use
+    observations after 2020-01-02.
+    """
+
+    if len(
+        historical_features
+    ) < (
+        window_size - 1
+    ):
+        raise ValueError(
+            "Not enough historical observations are available "
+            "to build the requested window."
+        )
+
+    history = historical_features[
+        -(
+            window_size - 1
+        ):
+    ]
+
+    combined_features = np.concatenate(
+        [
+            history,
+            current_features,
+        ],
+        axis=0,
+    )
+
+    target_values = (
+        current_targets
+        .reset_index(drop=True)
+        .to_numpy()
+    )
+
+    date_values = (
+        current_dates
+        .reset_index(drop=True)
+        .to_numpy()
+    )
+
+    X = []
+    y = []
+    sample_dates = []
+
+    history_length = len(
+        history
+    )
+
+    for current_index in range(
+        len(
+            current_features
+        )
+    ):
+        target_value = (
+            target_values[
+                current_index
+            ]
+        )
+
+        if pd.isna(
+            target_value
+        ):
+            continue
+
+        end_index = (
+            history_length
+            + current_index
+        )
+
+        start_index = (
+            end_index
+            - window_size
+            + 1
+        )
+
+        window = combined_features[
+            start_index:
+            end_index + 1
+        ]
+
+        if len(
+            window
+        ) != window_size:
+            raise ValueError(
+                "A generated sequence has an invalid window length."
+            )
+
+        X.append(
+            window
+        )
+
+        y.append(
+            int(
+                target_value
+            )
+        )
+
+        sample_dates.append(
+            date_values[
+                current_index
+            ]
+        )
+
+    return (
+        np.asarray(
+            X,
+            dtype=np.float32,
+        ),
+        np.asarray(
+            y,
+            dtype=np.int64,
+        ),
+        np.asarray(
+            sample_dates,
+        ),
     )
 
 
@@ -423,37 +666,50 @@ def prepare_ofr_data(
     window_size: int = WINDOW_SIZE,
     forecast_horizon: int = FORECAST_HORIZON,
 ) -> PreparedOFRData:
-    """Run the complete preprocessing pipeline."""
+    """Run the complete leakage-safe preprocessing pipeline."""
 
-    raw_data = load_ofr_fsi()
+    raw_data = (
+        load_ofr_fsi()
+    )
 
     data = clean_raw_data(
         raw_data
     )
 
-    train, validation, test = (
-        split_chronologically(data)
-    )
-
-    train = add_future_stress_change(
+    (
         train,
-        horizon=forecast_horizon,
-    )
-
-    validation = add_future_stress_change(
         validation,
-        horizon=forecast_horizon,
-    )
-
-    test = add_future_stress_change(
         test,
-        horizon=forecast_horizon,
+    ) = split_chronologically(
+        data
     )
 
-    low_threshold, high_threshold = (
-        calculate_training_thresholds(
-            train
+    train = (
+        add_future_stress_change(
+            train,
+            horizon=forecast_horizon,
         )
+    )
+
+    validation = (
+        add_future_stress_change(
+            validation,
+            horizon=forecast_horizon,
+        )
+    )
+
+    test = (
+        add_future_stress_change(
+            test,
+            horizon=forecast_horizon,
+        )
+    )
+
+    (
+        low_threshold,
+        high_threshold,
+    ) = calculate_training_thresholds(
+        train
     )
 
     train = add_target_classes(
@@ -485,37 +741,56 @@ def prepare_ofr_data(
         test,
     )
 
+    # Training can only use observations from the training split.
     (
         X_train,
         y_train,
         dates_train,
     ) = create_sequences(
         train_scaled,
-        train[TARGET_COLUMN],
-        train[DATE_COLUMN],
+        train[
+            TARGET_COLUMN
+        ],
+        train[
+            DATE_COLUMN
+        ],
         window_size,
     )
 
+    # Validation can use the final training observations as historical
+    # context because they occurred before every validation target date.
     (
         X_validation,
         y_validation,
         dates_validation,
-    ) = create_sequences(
-        validation_scaled,
-        validation[TARGET_COLUMN],
-        validation[DATE_COLUMN],
-        window_size,
+    ) = create_sequences_with_history(
+        historical_features=train_scaled,
+        current_features=validation_scaled,
+        current_targets=validation[
+            TARGET_COLUMN
+        ],
+        current_dates=validation[
+            DATE_COLUMN
+        ],
+        window_size=window_size,
     )
 
+    # Test can use the final validation observations as historical
+    # context because they occurred before every test target date.
     (
         X_test,
         y_test,
         dates_test,
-    ) = create_sequences(
-        test_scaled,
-        test[TARGET_COLUMN],
-        test[DATE_COLUMN],
-        window_size,
+    ) = create_sequences_with_history(
+        historical_features=validation_scaled,
+        current_features=test_scaled,
+        current_targets=test[
+            TARGET_COLUMN
+        ],
+        current_dates=test[
+            DATE_COLUMN
+        ],
+        window_size=window_size,
     )
 
     return PreparedOFRData(
@@ -531,10 +806,17 @@ def prepare_ofr_data(
         y_test=y_test,
         dates_test=dates_test,
 
-        feature_names=FEATURE_COLUMNS.copy(),
+        feature_names=(
+            FEATURE_COLUMNS.copy()
+        ),
 
-        low_threshold=low_threshold,
-        high_threshold=high_threshold,
+        low_threshold=(
+            low_threshold
+        ),
+
+        high_threshold=(
+            high_threshold
+        ),
 
         scaler=scaler,
     )
@@ -551,40 +833,71 @@ def print_summary(
     """Print the most important preprocessing results."""
 
     print()
-    print("=== PREPARED DATA ===")
+    print(
+        "=== PREPARED DATA ==="
+    )
 
     print()
-    print("Feature count:")
-    print(len(prepared.feature_names))
+    print(
+        "Feature count:"
+    )
+
+    print(
+        len(
+            prepared.feature_names
+        )
+    )
 
     print()
-    print("Features:")
-    for feature in prepared.feature_names:
-        print(f"- {feature}")
+    print(
+        "Features:"
+    )
+
+    for feature in (
+        prepared.feature_names
+    ):
+        print(
+            f"- {feature}"
+        )
 
     print()
-    print("Training thresholds:")
+    print(
+        "Training thresholds:"
+    )
+
     print(
         "Stress Decrease / Stable:",
-        round(prepared.low_threshold, 4),
+        round(
+            prepared.low_threshold,
+            4,
+        ),
     )
+
     print(
         "Stable / Stress Increase:",
-        round(prepared.high_threshold, 4),
+        round(
+            prepared.high_threshold,
+            4,
+        ),
     )
 
     print()
-    print("Sequence shapes:")
+    print(
+        "Sequence shapes:"
+    )
+
     print(
         "Train:",
         prepared.X_train.shape,
         prepared.y_train.shape,
     )
+
     print(
         "Validation:",
         prepared.X_validation.shape,
         prepared.y_validation.shape,
     )
+
     print(
         "Test:",
         prepared.X_test.shape,
@@ -592,16 +905,32 @@ def print_summary(
     )
 
     print()
-    print("Class distribution:")
+    print(
+        "Class distribution:"
+    )
 
-    for split_name, labels in [
-        ("Train", prepared.y_train),
-        ("Validation", prepared.y_validation),
-        ("Test", prepared.y_test),
+    for (
+        split_name,
+        labels,
+    ) in [
+        (
+            "Train",
+            prepared.y_train,
+        ),
+        (
+            "Validation",
+            prepared.y_validation,
+        ),
+        (
+            "Test",
+            prepared.y_test,
+        ),
     ]:
         counts = np.bincount(
             labels,
-            minlength=len(CLASS_NAMES),
+            minlength=len(
+                CLASS_NAMES
+            ),
         )
 
         print(
@@ -610,7 +939,9 @@ def print_summary(
         )
 
     print()
-    print("First and last prediction dates:")
+    print(
+        "First and last prediction dates:"
+    )
 
     print(
         "Train:",
@@ -635,5 +966,10 @@ def print_summary(
 
 
 if __name__ == "__main__":
-    prepared_data = prepare_ofr_data()
-    print_summary(prepared_data)
+    prepared_data = (
+        prepare_ofr_data()
+    )
+
+    print_summary(
+        prepared_data
+    )

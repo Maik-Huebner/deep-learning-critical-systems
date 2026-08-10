@@ -10,6 +10,7 @@ from deep_learning_critical_systems.data.prepare_ofr_fsi import (
     calculate_training_thresholds,
     clean_raw_data,
     create_sequences,
+    create_sequences_with_history,
     scale_features,
     split_chronologically,
 )
@@ -110,13 +111,15 @@ def test_future_target_requires_complete_horizon():
         horizon=5,
     )
 
-    assert train["future_stress_change"].tail(5).isna().all()
-
     assert train[
         "future_stress_change"
-    ].iloc[-6] == train[
-        "future_stress_change"
-    ].iloc[-6]
+    ].tail(5).isna().all()
+
+    assert pd.notna(
+        train[
+            "future_stress_change"
+        ].iloc[-6]
+    )
 
 
 def test_thresholds_are_calculated_from_training_data():
@@ -316,3 +319,107 @@ def test_create_sequences_has_correct_shape():
 
     assert sample_dates[0] == dates.iloc[59]
     assert sample_dates[-1] == dates.iloc[94]
+
+
+def test_sequences_with_history_use_only_past_context():
+    """Validation/test windows may use earlier split observations."""
+
+    n_features = len(FEATURE_COLUMNS)
+    window_size = 60
+
+    historical_features = np.arange(
+        59 * n_features,
+        dtype=np.float32,
+    ).reshape(
+        59,
+        n_features,
+    )
+
+    current_features = np.vstack(
+        [
+            np.full(
+                n_features,
+                1000.0,
+                dtype=np.float32,
+            ),
+            np.full(
+                n_features,
+                2000.0,
+                dtype=np.float32,
+            ),
+            np.full(
+                n_features,
+                3000.0,
+                dtype=np.float32,
+            ),
+        ]
+    )
+
+    current_targets = pd.Series(
+        [0, 2, pd.NA],
+        dtype="Int64",
+    )
+
+    current_dates = pd.Series(
+        pd.to_datetime(
+            [
+                "2020-01-02",
+                "2020-01-03",
+                "2020-01-06",
+            ]
+        )
+    )
+
+    X, y, sample_dates = create_sequences_with_history(
+        historical_features=historical_features,
+        current_features=current_features,
+        current_targets=current_targets,
+        current_dates=current_dates,
+        window_size=window_size,
+    )
+
+    assert X.shape == (
+        2,
+        60,
+        n_features,
+    )
+
+    assert y.tolist() == [
+        0,
+        2,
+    ]
+
+    assert sample_dates.tolist() == [
+        current_dates.iloc[0],
+        current_dates.iloc[1],
+    ]
+
+    # First prediction:
+    # 59 historical rows + first current observation.
+    assert np.array_equal(
+        X[0][:-1],
+        historical_features,
+    )
+
+    assert np.array_equal(
+        X[0][-1],
+        current_features[0],
+    )
+
+    # Second prediction:
+    # Oldest history row drops out and the previous current observation
+    # becomes part of the historical context.
+    assert np.array_equal(
+        X[1][:-2],
+        historical_features[1:],
+    )
+
+    assert np.array_equal(
+        X[1][-2],
+        current_features[0],
+    )
+
+    assert np.array_equal(
+        X[1][-1],
+        current_features[1],
+    )
