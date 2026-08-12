@@ -1,4 +1,4 @@
-"""Evaluate the trained LSTM financial-stress model."""
+"""Evaluate the final tuned LSTM financial-stress model."""
 
 from __future__ import annotations
 
@@ -31,14 +31,13 @@ from deep_learning_critical_systems.training.trainer import (
     select_device,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 CHECKPOINT_PATH = (
     PROJECT_ROOT
     / "artifacts"
     / "checkpoints"
-    / "lstm_model.pt"
+    / "lstm_tuned_model.pt"
 )
 
 METRICS_PATH = (
@@ -60,8 +59,11 @@ BATCH_SIZE = 64
 
 def load_model(
     device: torch.device,
-) -> FinancialStressLSTM:
-    """Load the best saved LSTM model."""
+) -> tuple[
+    FinancialStressLSTM,
+    dict,
+]:
+    """Load the final validation-selected LSTM model."""
 
     if not CHECKPOINT_PATH.exists():
         raise FileNotFoundError(
@@ -103,7 +105,10 @@ def load_model(
 
     model.eval()
 
-    return model
+    return (
+        model,
+        checkpoint,
+    )
 
 
 def predict(
@@ -228,7 +233,7 @@ def plot_confusion_matrix(
     targets: np.ndarray,
     predictions: np.ndarray,
 ) -> None:
-    """Create and save the LSTM test confusion matrix."""
+    """Create and save the final LSTM test confusion matrix."""
 
     matrix = confusion_matrix(
         targets,
@@ -285,7 +290,7 @@ def plot_confusion_matrix(
     )
 
     axis.set_title(
-        "LSTM - Test Confusion Matrix"
+        "Tuned LSTM - Test Confusion Matrix"
     )
 
     for row in range(
@@ -332,8 +337,9 @@ def plot_confusion_matrix(
 def save_metrics(
     lstm_metrics: dict[str, float],
     majority_metrics: dict[str, float],
+    checkpoint: dict,
 ) -> None:
-    """Save LSTM and naive-baseline metrics as JSON."""
+    """Save final LSTM, baseline and model-selection metadata as JSON."""
 
     METRICS_PATH.parent.mkdir(
         parents=True,
@@ -343,6 +349,38 @@ def save_metrics(
     result = {
         "lstm": lstm_metrics,
         "majority_baseline": majority_metrics,
+        "model_selection": {
+            "selected_run": checkpoint.get(
+                "selected_run"
+            ),
+            "selection_method": checkpoint.get(
+                "selection_method"
+            ),
+            "selection_metric": checkpoint.get(
+                "selection_metric"
+            ),
+            "selection_tie_breaker": checkpoint.get(
+                "selection_tie_breaker"
+            ),
+            "canonical_model_seed": checkpoint.get(
+                "canonical_model_seed"
+            ),
+            "stability_seeds": checkpoint.get(
+                "stability_seeds"
+            ),
+            "hidden_size": checkpoint.get(
+                "hidden_size"
+            ),
+            "classifier_hidden_size": checkpoint.get(
+                "classifier_hidden_size"
+            ),
+            "dropout": checkpoint.get(
+                "dropout"
+            ),
+            "learning_rate": checkpoint.get(
+                "learning_rate"
+            ),
+        },
     }
 
     METRICS_PATH.write_text(
@@ -411,7 +449,7 @@ def print_metric_block(
 
 
 def main() -> None:
-    """Run the complete LSTM test evaluation."""
+    """Run the final tuned LSTM test evaluation."""
 
     prepared_data = prepare_ofr_data()
 
@@ -426,7 +464,10 @@ def main() -> None:
 
     device = select_device()
 
-    model = load_model(
+    (
+        model,
+        checkpoint,
+    ) = load_model(
         device
     )
 
@@ -458,12 +499,73 @@ def main() -> None:
 
     print()
     print(
-        "=== LSTM TEST EVALUATION ==="
+        "=== FINAL TUNED LSTM TEST EVALUATION ==="
     )
 
     print(
         "Device:",
         device,
+    )
+
+    print(
+        "Checkpoint:",
+        CHECKPOINT_PATH.name,
+    )
+
+    print(
+        "Selected run:",
+        checkpoint.get(
+            "selected_run"
+        ),
+    )
+
+    print(
+        "Selection method:",
+        checkpoint.get(
+            "selection_method"
+        ),
+    )
+
+    print(
+        "Selection metric:",
+        checkpoint.get(
+            "selection_metric"
+        ),
+    )
+
+    print(
+        "Canonical model seed:",
+        checkpoint.get(
+            "canonical_model_seed"
+        ),
+    )
+
+    print(
+        "Hidden size:",
+        checkpoint[
+            "hidden_size"
+        ],
+    )
+
+    print(
+        "Classifier hidden size:",
+        checkpoint[
+            "classifier_hidden_size"
+        ],
+    )
+
+    print(
+        "Dropout:",
+        checkpoint[
+            "dropout"
+        ],
+    )
+
+    print(
+        "Learning rate:",
+        checkpoint[
+            "learning_rate"
+        ],
     )
 
     print(
@@ -474,7 +576,7 @@ def main() -> None:
     )
 
     print_metric_block(
-        "LSTM:",
+        "Tuned LSTM:",
         lstm_metrics,
     )
 
@@ -505,6 +607,11 @@ def main() -> None:
     matrix = confusion_matrix(
         test_targets,
         lstm_predictions,
+        labels=[
+            0,
+            1,
+            2,
+        ],
     )
 
     print(
@@ -521,6 +628,7 @@ def main() -> None:
     save_metrics(
         lstm_metrics,
         majority_metrics,
+        checkpoint,
     )
 
     print()

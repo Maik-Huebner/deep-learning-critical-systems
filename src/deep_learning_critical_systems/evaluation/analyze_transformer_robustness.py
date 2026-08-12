@@ -34,7 +34,6 @@ from deep_learning_critical_systems.data.datasets import (
     create_data_loaders,
 )
 from deep_learning_critical_systems.data.prepare_ofr_fsi import (
-    CLASS_NAMES,
     prepare_ofr_data,
 )
 from deep_learning_critical_systems.models.transformer import (
