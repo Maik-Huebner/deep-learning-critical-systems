@@ -489,9 +489,13 @@ Validation-Ergebnis:
 
 ### LSTM
 
-- Accuracy: 44,33 %
-- Macro-F1: 37,90 %
-- Recall Stress Increase: 6,15 %
+- Accuracy: 41,79 %
+- Macro Precision: 38,76 %
+- Macro Recall: 40,94 %
+- Macro-F1: 36,43 %
+- Recall Stress Increase: 6,89 %
+
+Die finale Konfiguration ist `L1` mit Learning Rate `0,0005`. Sie wurde ausschließlich anhand von Validation-Daten ausgewählt.
 
 ### Transformer
 
@@ -499,13 +503,48 @@ Validation-Ergebnis:
 - Macro-F1: 37,38 %
 - Recall Stress Increase: 8,19 %
 
-Das LSTM erreicht damit den besten finalen Macro-F1.
+Der Transformer erreicht nach der finalen LSTM-Auswahl den besten Macro-F1 der drei neuronalen Modelle.
 
 Der Transformer erreicht den höchsten Recall für die Klasse `Stress Increase` unter den drei neuronalen Modellen.
 
 Das Ergebnis zeigt, dass eine komplexere Architektur nicht automatisch besser auf unbekannte zukünftige Daten generalisiert.
 
 ---
+
+### Ergänzende finale LSTM-Auswahl
+
+Für einen faireren Vergleich mit dem systematisch getunten Transformer wurde die LSTM-Hyperparameter-Auswahl nachträglich ebenfalls ausschließlich auf Training und Validation durchgeführt. Das Testset wurde nicht für die Auswahl verwendet.
+
+Primäres Kriterium war Validation Macro-F1, Tie-Breaker Validation Loss. Nach zwei Tuning-Stufen lagen `L1` und `L9` bei Seed 42 nur rund 0,001 Macro-F1 auseinander.
+
+**Zusätzliches Wissen / zusätzliche methodische Absicherung:** Die beiden Finalisten wurden deshalb mit den vorab festgelegten Seeds `42`, `123` und `2026` verglichen.
+
+| Konfiguration | Mean Val. Macro-F1 | Std. | Mean Val. Loss | Mean Increase Recall |
+|---|---:|---:|---:|---:|
+| L1 | **0,2875** | 0,0715 | **1,0635** | **0,0469** |
+| L9 | 0,2813 | 0,0768 | 1,0647 | 0,0344 |
+
+`L1` bleibt der finale LSTM-Checkpoint. Die Standardabweichungen zeigen zugleich eine relevante Seed-Sensitivität.
+
+Die ursprüngliche ungetunte LSTM-Version hatte später auf dem Testset etwas bessere Gesamtwerte. Trotzdem wird nicht anhand des Testsets zurückgewechselt, da dies Test-Set-Optimierung wäre. Die Differenz zwischen Validation-Auswahl und späterer Testleistung wird als Hinweis auf zeitliche Nichtstationarität diskutiert.
+
+### ROC-AUC-Auswertung
+
+| Modell | Macro ROC-AUC | Stressrückgang | Stabil | Stressanstieg |
+|---|---:|---:|---:|---:|
+| MLP | 0,5801 | 0,6296 | 0,5572 | 0,5534 |
+| LSTM | 0,5970 | 0,6333 | 0,5944 | **0,5632** |
+| Transformer | **0,6183** | **0,6863** | **0,6207** | 0,5481 |
+
+Der Transformer erreicht die höchste Macro-ROC-AUC. Die Trennfähigkeit bleibt insgesamt moderat. ROC-AUC ergänzt Accuracy, Precision, Recall und F1, ersetzt diese Metriken aber nicht.
+
+### Zeitliche Generalisierung 2020–2026
+
+Nach Abschluss der Modellauswahl wurden die eingefrorenen Modelle rein beschreibend nach Kalenderjahr ausgewertet. Diese Post-hoc-Analyse wurde nicht für weiteres Tuning verwendet.
+
+Besonders auffällig ist 2021: Der Transformer erreicht beim Stress-Increase-Recall 41,57 %, der LSTM 25,84 %. In mehreren anderen Jahren fällt der Stress-Increase-Recall auf oder nahe 0 %. 2025 erreicht der LSTM beim Macro-F1 37,96 %, während der Transformer 29,49 % erreicht. Das Teiljahr 2026 ist für alle Modelle vergleichsweise schwach.
+
+Die vollständigen Jahreswerte befinden sich in `reports/temporal_generalization.md`. Die Analyse macht empirisch sichtbar, dass die Modellleistung über unterschiedliche Marktregime schwankt.
 
 ## 18. Transformer Confusion Matrix
 
@@ -701,7 +740,6 @@ Dadurch könnte die Stabilität des Modells über unterschiedliche Marktregime h
 - pandas
 - scikit-learn
 - Matplotlib
-- seaborn
 - pytest
 - certifi
 - Git
@@ -720,6 +758,8 @@ Das Projekt verwendet einen festen Random Seed von:
 
 Weitere Maßnahmen zur Reproduzierbarkeit:
 
+- eingefrorener OFR-Analysesnapshot bis 05.08.2026
+- Canonical SHA-256 `38535be9eadd819493c3b77e11885deb14e344d97007551f87c76700cc829c9c`
 - chronologische Datenaufteilung
 - train-only Scaling
 - fest definierte Zielgrenzen
@@ -733,7 +773,7 @@ Weitere Maßnahmen zur Reproduzierbarkeit:
 Aktueller Teststand:
 
 ```text
-58 passed
+65 passed
 ```
 
 ---
@@ -782,9 +822,9 @@ Umgesetzt wurden:
 - Responsible AI
 - konkrete nächste Entwicklungsschritte
 
-Das LSTM erreicht auf dem unbekannten Testzeitraum den besten Macro-F1.
+Der Transformer erreicht auf dem unbekannten Testzeitraum den besten Macro-F1 der drei neuronalen Modelle.
 
-Der Transformer erreicht unter den neuronalen Modellen den höchsten Recall für steigenden Finanzstress.
+Der Transformer erreicht zugleich den höchsten Recall für steigenden Finanzstress und die höchste Macro-ROC-AUC der drei neuronalen Modelle.
 
 Damit liefert das Projekt gleichzeitig eine wichtige fachliche Erkenntnis:
 
@@ -798,7 +838,21 @@ Damit liefert das Projekt gleichzeitig eine wichtige fachliche Erkenntnis:
 
 Office of Financial Research (OFR) — Financial Stress Index
 
-https://www.financialresearch.gov/
+https://www.financialresearch.gov/financial-stress-index/
+
+Paul Monin (2017): *The OFR Financial Stress Index*
+
+https://www.financialresearch.gov/working-papers/2017/10/25/the-ofr-financial-stability-index/
+
+### Modellarchitekturen
+
+Vaswani et al. (2017): *Attention Is All You Need*
+
+https://arxiv.org/abs/1706.03762
+
+Hochreiter & Schmidhuber (1997): *Long Short-Term Memory*
+
+https://doi.org/10.1162/neco.1997.9.8.1735
 
 ### Technische Grundlage
 

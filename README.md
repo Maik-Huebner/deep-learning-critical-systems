@@ -1,79 +1,56 @@
 # Financial Stress Regime Forecasting with PyTorch
 
-Deep-Learning-Projekt zur Klassifikation zukünftiger Finanzstressregime mit realen Finanzmarktdaten, chronologischer Evaluation und einem Vergleich von MLP, LSTM und Transformer.
+Reproduzierbarer Deep-Learning-Forschungsprototyp zur Klassifikation zukünftiger Finanzstressregime mit realen OFR-Finanzmarktdaten, chronologischer Evaluation und einem Vergleich von MLP, LSTM und Transformer.
+
+**Version:** 1.0.0
+**Status:** abgeschlossenes Portfolio- und Abschlussprojekt
+**Schwerpunkt:** Financial AI · Deep Learning · PyTorch · Time Series · Transformer
 
 ## Forschungsfrage
 
 > Kann ein PyTorch-Transformer anhand der vorherigen 60 Handelstage multivariater Finanzstressdaten klassifizieren, ob der Finanzstress über die folgenden fünf Handelstage sinkt, stabil bleibt oder steigt?
 
-## Projektstatus
-
-**Abgeschlossener Deep-Learning-Forschungsprototyp**
-
-Das Projekt demonstriert einen vollständigen und nachvollziehbaren AI-Engineering-Workflow mit:
-
-- realen Finanzdaten
-- chronologischer Datenaufteilung
-- Leakage-Vermeidung
-- reproduzierbaren PyTorch-Modellen
-- MLP-Baseline
-- LSTM
-- Transformer
-- Early Stopping
-- Hyperparameter-Tuning
-- Explainability
-- Fehleranalyse
-- Robustheitsanalyse
-- Responsible AI
-
-Der aktuelle Stand ist ausdrücklich:
-
-- kein Trading-System
-- keine Anlageempfehlung
-- keine Produktionsanwendung
-- kein Nachweis einer profitablen Handelsstrategie
-
----
-
 ## Wichtigste Ergebnisse
 
-Finale Evaluation auf dem chronologisch zurückgehaltenen Testzeitraum:
+Finale Evaluation auf dem chronologisch zurückgehaltenen Testzeitraum vom 02.01.2020 bis 29.07.2026:
 
-| Modell | Accuracy | Macro-F1 | Recall Stress Increase |
-|---|---:|---:|---:|
-| MLP | 43,92 % | 33,44 % | 0,37 % |
-| LSTM | **44,33 %** | **37,90 %** | 6,15 % |
-| Transformer | 42,44 % | 37,38 % | **8,19 %** |
-| Majority-Baseline | 30,64 % | 15,63 % | 0,00 % |
+| Modell | Accuracy | Macro-F1 | Recall Stress Increase | Macro ROC-AUC |
+|---|---:|---:|---:|---:|
+| MLP | **43,92 %** | 33,44 % | 0,37 % | 0,5801 |
+| LSTM | 41,79 % | 36,43 % | 6,89 % | 0,5970 |
+| Transformer | 42,44 % | **37,38 %** | **8,19 %** | **0,6183** |
+| Majority-Baseline | 30,64 % | 15,63 % | 0,00 % | – |
 
-### Zentrale Erkenntnisse
+Die Accuracy allein würde das MLP bevorzugen. Bei der für dieses Projekt wichtigeren ausgewogenen Klassenleistung führt jedoch der Transformer: Er erreicht den höchsten Macro-F1, den höchsten Recall für `Stress Increase` und die höchste Macro-ROC-AUC der drei neuronalen Modelle.
 
-- Das **LSTM** erreicht die beste Gesamtleistung auf dem unbekannten Testset.
-- Der **Transformer** erreicht den höchsten Recall für `Stress Increase`.
-- Das komplexere Modell ist nicht automatisch das bessere Modell.
-- Die Erkennung steigenden Finanzstresses bleibt die wichtigste Modellschwäche.
-- Validation- und Testleistung unterscheiden sich sichtbar.
-- Kleine standardisierte Eingabestörungen verändern die Gesamtleistung nur begrenzt.
-- Attention unterstützt die Interpretation zeitlicher Beziehungen, beweist aber keine Kausalität.
+Die Ergebnisse bleiben bewusst moderat. Das Projekt demonstriert einen methodisch sauberen Financial-AI-Forschungsworkflow, aber kein produktionsreifes Frühwarn- oder Trading-System.
 
-![Finaler Modellvergleich](reports/figures/model_comparison.png)
+![ROC-AUC der finalen Modelle](reports/figures/roc_auc_comparison.png)
 
----
+## Zentrale Erkenntnisse
 
-## Datengrundlage
+- Der Transformer ist nach der finalen Evaluation das stärkste neuronale Modell bei **Macro-F1**, **Stress-Increase-Recall** und **Macro-ROC-AUC**.
+- Das MLP besitzt mit 43,92 % die höchste Accuracy, erkennt Stressanstiege aber nahezu gar nicht.
+- Die LSTM-Hyperparameter wurden ausschließlich auf Validation-Daten ausgewählt. Eine zusätzliche Drei-Seed-Prüfung zeigte deutliche Seed-Sensitivität.
+- Die jahresweise Testanalyse zeigt starke zeitliche Schwankungen und damit relevante Nichtstationarität.
+- Stressanstiege bleiben für alle Modelle die schwierigste Zielklasse.
+- Attention unterstützt die Interpretation zeitlicher Beziehungen, beweist aber keine Kausalität oder Feature Importance.
+- Kleine synthetische Eingabestörungen verändern die Transformer-Leistung nur begrenzt; stärkere Störungen führen zu sichtbar schwächeren Ergebnissen.
 
-Verwendet wird der offizielle **Financial Stress Index des Office of Financial Research (OFR)**.
+## Datengrundlage und eingefrorener Snapshot
 
-Datensatzumfang im Projekt:
+Verwendet wird der **Financial Stress Index des Office of Financial Research (OFR)**.
+
+Der für Version 1.0.0 eingefrorene Analysesnapshot umfasst:
 
 - 6.730 Beobachtungen
 - Zeitraum: 03.01.2000 bis 05.08.2026
-- 9 numerische Features
+- 9 numerische OFR-Features
 - keine fehlenden Werte
 - keine doppelten Datumswerte
-- chronologisch sortiert
+- chronologische Sortierung
 
-Verwendete Features:
+Features:
 
 1. `OFR FSI`
 2. `Credit`
@@ -85,31 +62,21 @@ Verwendete Features:
 8. `Other advanced economies`
 9. `Emerging markets`
 
-Die Rohdaten werden lokal gespeichert und nicht in das Git-Repository eingecheckt.
+Zur Reproduzierbarkeit wird der Snapshot über Enddatum, Zeilenzahl und Hash geprüft.
 
----
+```text
+Snapshot-Zeilen: 6730
+Snapshot-Ende:   2026-08-05
+Canonical SHA-256:
+38535be9eadd819493c3b77e11885deb14e344d97007551f87c76700cc829c9c
 
-## Explorative Datenanalyse
+SHA-256 der verwendeten Rohdatei:
+2d4a955fb0d72993fae454a731628d1deb4aca980a19121b989e80de09bf8478
+```
 
-Vor der Modellierung wurden unter anderem untersucht:
-
-- zeitlicher Verlauf des OFR FSI
-- Verteilungen
-- Feature-Korrelationen
-- zukünftige Stressveränderungen
-- Klassenverteilung in Training, Validation und Test
-
-Beispielplots:
-
-![OFR FSI im Zeitverlauf](reports/figures/ofr_fsi_over_time.png)
-
-![Feature-Korrelationen](reports/figures/feature_correlation_matrix.png)
-
----
+Spätere OFR-Daten werden für diese Projektversion nicht automatisch in die Analyse übernommen.
 
 ## Zielvariable
-
-Für jeden Zeitpunkt wird die durchschnittliche Entwicklung des OFR FSI über die folgenden fünf Handelstage betrachtet.
 
 ```text
 zukünftige Stressänderung
@@ -119,7 +86,7 @@ Mittelwert der nächsten 5 OFR-FSI-Werte
 aktueller OFR-FSI-Wert
 ```
 
-Die drei Klassen sind:
+Klassen:
 
 ```text
 0 = Stress Decrease
@@ -127,223 +94,111 @@ Die drei Klassen sind:
 2 = Stress Increase
 ```
 
-Die Klassengrenzen wurden ausschließlich anhand des Trainingszeitraums bestimmt:
+Die Klassengrenzen werden ausschließlich aus dem Trainingszeitraum über das 1/3- und 2/3-Quantil bestimmt:
 
 ```text
 untere Grenze ≈ -0,1388
 obere Grenze ≈  0,0863
 ```
 
-Dadurch fließen keine Informationen aus Validation oder Test in die Definition der Zielklassen ein.
+Für ein gültiges Ziel müssen alle fünf zukünftigen Beobachtungen vorhanden sein. Die Zielvariable wird separat innerhalb jedes chronologischen Splits berechnet, sodass keine Labels Split-Grenzen überschreiten.
 
----
-
-## Chronologische Datenaufteilung
-
-Bei Finanzzeitreihen werden Vergangenheit und Zukunft nicht zufällig vermischt.
+## Chronologische Aufteilung und Leakage-Vermeidung
 
 ```text
-Training:
-bis Ende 2016
-
-Validation:
-2017 bis Ende 2019
-
-Test:
-ab 2020
+Training:   bis Ende 2016
+Validation: 2017 bis Ende 2019
+Test:       ab 2020
 ```
 
-### Leakage-Vermeidung
+Vorhersagezeiträume:
 
-Umgesetzt wurden unter anderem:
+```text
+Training:   28.03.2000 bis 22.12.2016
+Validation: 03.01.2017 bis 23.12.2019
+Test:       02.01.2020 bis 29.07.2026
+```
 
-- chronologische Splits
+Leakage-Schutz:
+
+- keine zufällige Mischung von Vergangenheit und Zukunft
 - Zielberechnung separat innerhalb der Splits
 - `StandardScaler` ausschließlich auf Trainingsdaten fitten
-- Validation und Test nur mit den Trainingsparametern skalieren
-- historische Kontextdaten ausschließlich aus der Vergangenheit verwenden
-- keine zufällige Vermischung der Zeitreihe
-
----
+- Validation und Test nur mit Trainingsparametern transformieren
+- Past-only-Kontext für die ersten Validation-/Testfenster
+- DataLoader mit `shuffle=False`
 
 ## Sliding-Window-Sequenzen
 
-Jede Modellvorhersage verwendet:
+Jede Vorhersage verwendet `60 Handelstage × 9 Features`.
+
+| Split | Shape | Klassen `[Decrease, Stable, Increase]` |
+|---|---|---|
+| Training | `(4213, 60, 9)` | `[1406, 1402, 1405]` |
+| Validation | `(749, 60, 9)` | `[233, 303, 213]` |
+| Test | `(1694, 60, 9)` | `[519, 638, 537]` |
+
+## Modelle
+
+### MLP-Baseline
 
 ```text
-60 Handelstage × 9 Features
+Flatten 60 × 9
+→ Linear 540 → 128
+→ ReLU + Dropout
+→ Linear 128 → 64
+→ ReLU + Dropout
+→ Linear 64 → 3
 ```
 
-Tensorform:
+Trainierbare Parameter: **77.699**
 
-```text
-(samples, timesteps, features)
-```
-
-Konkrete Shapes:
-
-```text
-Training:
-(4213, 60, 9)
-
-Validation:
-(749, 60, 9)
-
-Test:
-(1694, 60, 9)
-```
-
-Klassenverteilung:
-
-```text
-Training:
-[1406, 1402, 1405]
-
-Validation:
-[233, 303, 213]
-
-Test:
-[519, 638, 537]
-```
-
-Die DataLoader verwenden bewusst:
-
-```python
-shuffle=False
-```
-
-damit die zeitliche Reihenfolge erhalten bleibt.
-
----
-
-# Modelle
-
-## 1. MLP-Baseline
-
-Architektur:
-
-```text
-60 × 9 Features
-      ↓
-Flatten
-      ↓
-540
-      ↓
-Linear 540 → 128
-ReLU
-Dropout
-      ↓
-Linear 128 → 64
-ReLU
-Dropout
-      ↓
-Linear 64 → 3
-```
-
-Trainierbare Parameter:
-
-```text
-77.699
-```
-
-Testresultate:
-
-- Accuracy: 43,92 %
-- Macro-F1: 33,44 %
-- Recall `Stress Increase`: 0,37 %
-
-Das MLP erkennt steigenden Finanzstress nahezu gar nicht.
-
----
-
-## 2. LSTM
-
-Architektur:
+### LSTM
 
 ```text
 9 Features
-    ↓
-LSTM
-Hidden Size 64
-    ↓
-letzter Sequenzzustand
-    ↓
-Linear 64 → 32
-ReLU
-Dropout
-    ↓
-Linear 32 → 3
+→ LSTM, Hidden Size 64
+→ letzter Sequenzzustand
+→ Linear 64 → 32
+→ ReLU + Dropout
+→ Linear 32 → 3
 ```
 
-Trainierbare Parameter:
+Trainierbare Parameter: **21.379**
+
+Finale Konfiguration `L1`:
 
 ```text
-21.379
+Hidden Size:        64
+Classifier Hidden:  32
+Dropout:           0,20
+Learning Rate:   0,0005
+Batch Size:         64
 ```
 
-Bestes Validation-Ergebnis:
-
-- Best Epoch: 18
-- Validation Loss: 1,0437
-- Validation Accuracy: 47,40 %
-
-Finale Testmetriken:
-
-- Accuracy: 44,33 %
-- Macro Precision: 43,26 %
-- Macro Recall: 43,12 %
-- Macro-F1: 37,90 %
-- Recall `Stress Increase`: 6,15 %
-
-Das LSTM erreicht den besten finalen Macro-F1 der drei neuronalen Modelle.
-
----
-
-## 3. PyTorch Transformer
-
-Der Transformer ist das Hauptmodell des Projekts.
-
-### Architektur
+**Zusätzliches Wissen / zusätzliche methodische Absicherung:** Die beiden LSTM-Finalisten `L1` und `L9` wurden mit den Seeds `42`, `123` und `2026` verglichen.
 
 ```text
-9 Finanzfeatures
-      ↓
-Linear Input Projection
-      ↓
-Model Dimension 64
-      ↓
-Sinusoidal Positional Encoding
-      ↓
-Transformer Encoder Block
-      ↓
-Transformer Encoder Block
-      ↓
-Mean Pooling über 60 Handelstage
-      ↓
-Linear 64 → 32
-ReLU
-Dropout
-      ↓
-Linear 32 → 3
+L1: Mean Val. Macro-F1 = 0,2875 ± 0,0715
+L9: Mean Val. Macro-F1 = 0,2813 ± 0,0768
 ```
 
-Ein Encoder-Block enthält:
+Die Prüfung zeigt deutliche Seed-Sensitivität. Der finale LSTM-Checkpoint bleibt `L1` mit Seed 42. Das Testset wurde für diese Auswahl nicht verwendet.
+
+### Transformer
 
 ```text
-Multi-Head Self-Attention
-        ↓
-Residual Connection
-        ↓
-Layer Normalization
-        ↓
-Feed-Forward Network
-        ↓
-Residual Connection
-        ↓
-Layer Normalization
+9 Features
+→ Input Projection 9 → 64
+→ sinusoidales Positional Encoding
+→ 2 × Transformer Encoder Block
+→ Mean Pooling
+→ Linear 64 → 32
+→ ReLU + Dropout
+→ Linear 32 → 3
 ```
 
-Finale Architektur:
+Finale Konfiguration `T1`:
 
 ```text
 Model Dimension:       64
@@ -354,60 +209,20 @@ Classifier Hidden:     32
 Dropout:             0,20
 Learning Rate:     0,0005
 Batch Size:            64
+Trainierbare Parameter: 69.763
 ```
 
-Trainierbare Parameter:
+## Training und Modellauswahl
 
-```text
-69.763
-```
-
-### Positional Encoding
-
-Self-Attention kennt die chronologische Reihenfolge nicht automatisch.
-
-Deshalb wird ein sinusoidales Positional Encoding verwendet, das jedem historischen Handelstag Positionsinformationen hinzufügt.
-
-### Multi-Head Self-Attention
-
-Der Transformer verwendet vier Attention Heads.
-
-Für ein Beispiel entstehen Attention-Matrizen der Form:
-
-```text
-4 × 60 × 60
-```
-
-Jeder der 60 historischen Zeitpunkte kann dadurch Beziehungen zu allen anderen bekannten Zeitpunkten des Eingabefensters modellieren.
-
----
-
-# Training
-
-Alle Modelle verwenden einen wiederverwendbaren PyTorch-Training-Loop mit:
+Gemeinsamer PyTorch-Workflow:
 
 - `CrossEntropyLoss`
-- Adam Optimizer
-- Training Loss
-- Validation Loss
-- Training Accuracy
-- Validation Accuracy
+- Adam
+- Training-/Validation-Loss und Accuracy
 - Early Stopping
 - Wiederherstellung des besten Modellzustands
-- festem Random Seed
-- automatischer Device-Auswahl
-
-Device-Priorität:
-
-```text
-CUDA
-→ MPS
-→ CPU
-```
-
-Das Training wurde auf Apple Metal Performance Shaders (MPS) durchgeführt.
-
-### Early Stopping
+- feste Seeds
+- Device-Auswahl `CUDA → MPS → CPU`
 
 ```text
 Maximum Epochs: 50
@@ -415,103 +230,25 @@ Patience:        7
 Min Delta:       0,0001
 ```
 
----
-
-# Transformer-Hyperparameter-Tuning
-
-Das Tuning wurde vollständig vor der finalen Testevaluation durchgeführt.
-
-Das Testset wurde nicht zur Modellauswahl verwendet.
-
-Primäres Auswahlkriterium:
+Transformer `T1` wurde ausschließlich anhand von Validation-Macro-F1 und Validation-Loss ausgewählt:
 
 ```text
-Validation Macro-F1
+Validation Accuracy:               47,66 %
+Validation Macro-F1:               41,91 %
+Validation Recall Stress Increase: 18,31 %
+Best Epoch:                        12
 ```
 
-Sekundäres Kriterium:
+## Finale Testevaluation
 
-```text
-Validation Loss
-```
+| Modell | Accuracy | Macro Precision | Macro Recall | Macro-F1 | Increase Recall | Macro ROC-AUC |
+|---|---:|---:|---:|---:|---:|---:|
+| MLP | **43,92 %** | 64,36 % | 41,24 % | 33,44 % | 0,37 % | 0,5801 |
+| LSTM | 41,79 % | 38,76 % | 40,94 % | 36,43 % | 6,89 % | 0,5970 |
+| Transformer | 42,44 % | 40,68 % | **42,41 %** | **37,38 %** | **8,19 %** | **0,6183** |
+| Majority | 30,64 % | 10,21 % | 33,33 % | 15,63 % | 0,00 % | – |
 
-## Ausgangskonfiguration T0
-
-```text
-Model Dimension:     64
-Attention Heads:      4
-Encoder Layers:       2
-Feed Forward:       128
-Dropout:            0,20
-Learning Rate:     0,001
-```
-
-Ergebnis:
-
-- Validation Accuracy: 48,46 %
-- Validation Macro-F1: 39,63 %
-- Recall `Stress Increase`: 7,04 %
-
-## Tuning Stage 1
-
-| Run | Änderung | Val. Accuracy | Val. Macro-F1 | Increase Recall |
-|---|---|---:|---:|---:|
-| T0 | Ausgangsmodell | 48,46 % | 39,63 % | 7,04 % |
-| T1 | Learning Rate 0,0005 | 47,66 % | **41,91 %** | 18,31 % |
-| T2 | Model Dimension 128 | 45,93 % | 31,12 % | 0,00 % |
-| T3 | 2 Attention Heads | 41,66 % | 22,65 % | 0,47 % |
-| T4 | 1 Encoder Layer | 49,53 % | 40,47 % | 7,51 % |
-| T5 | Feed Forward 256 | 49,40 % | 39,16 % | 4,23 % |
-| T6 | Dropout 0,10 | **50,20 %** | 40,98 % | 8,45 % |
-
-## Tuning Stage 2
-
-| Run | Änderung | Val. Accuracy | Val. Macro-F1 | Increase Recall |
-|---|---|---:|---:|---:|
-| T7 | Learning Rate 0,00025 | 48,06 % | 40,97 % | 14,08 % |
-| T8 | Learning Rate 0,00075 | 49,13 % | 40,21 % | 9,39 % |
-| T9 | LR 0,0005 + Dropout 0,10 | 47,66 % | 41,73 % | **20,66 %** |
-| T10 | LR 0,0005 + 1 Layer | 44,86 % | 37,04 % | 15,49 % |
-| T11 | LR 0,0005 + Dropout 0,10 + 1 Layer | 45,79 % | 38,26 % | 18,31 % |
-
-T1 bleibt die finale Konfiguration, weil bereits vor der Testevaluation der Validation Macro-F1 als primäres Auswahlkriterium festgelegt wurde.
-
-![Transformer Tuning – Macro-F1](reports/figures/transformer_tuning_macro_f1.png)
-
----
-
-# Finale Transformer-Evaluation
-
-Ausgewählte Konfiguration:
-
-```text
-T1
-```
-
-Validation:
-
-- Best Epoch: 12
-- Validation Loss: 1,0518
-- Validation Accuracy: 47,66 %
-- Validation Macro-F1: 41,91 %
-- Recall `Stress Increase`: 18,31 %
-
-Finales Testset:
-
-- Accuracy: 42,44 %
-- Macro Precision: 40,68 %
-- Macro Recall: 42,41 %
-- Macro-F1: 37,38 %
-
-Klassenspezifischer Recall:
-
-```text
-Stress Decrease: 70,91 %
-Stable:          48,12 %
-Stress Increase:  8,19 %
-```
-
-Confusion Matrix:
+Transformer-Confusion-Matrix:
 
 ```text
 [[368, 122,  29],
@@ -519,43 +256,38 @@ Confusion Matrix:
  [256, 237,  44]]
 ```
 
-![Transformer Confusion Matrix](reports/figures/transformer_confusion_matrix.png)
+## ROC-AUC
 
----
+| Modell | Macro ROC-AUC | Stressrückgang | Stabil | Stressanstieg |
+|---|---:|---:|---:|---:|
+| MLP | 0,5801 | 0,6296 | 0,5572 | 0,5534 |
+| LSTM | 0,5970 | 0,6333 | 0,5944 | **0,5632** |
+| Transformer | **0,6183** | **0,6863** | **0,6207** | 0,5481 |
 
-# Majority-Baseline
+Der Transformer besitzt insgesamt die beste Trennfähigkeit. Die Werte liegen jedoch nur moderat über dem Zufallsniveau und werden nicht überinterpretiert.
 
-Die Majority-Baseline wird ausschließlich anhand der häufigsten Klasse im Trainingsset bestimmt.
+## Zeitliche Generalisierung 2020–2026
 
-Trainings-Majority:
+Die finalen Modelle wurden nach Abschluss der Modellauswahl zusätzlich getrennt nach Testjahr ausgewertet. Die Analyse ist post hoc und wurde nicht zum nachträglichen Tuning genutzt.
 
-```text
-Stress Decrease
-```
+Wichtige Beobachtungen:
 
-Testleistung:
+- 2021: Transformer Stress-Increase-Recall **41,57 %**, LSTM **25,84 %**.
+- In mehreren anderen Jahren fällt der Stress-Increase-Recall auf oder nahe 0 %.
+- 2025 erreicht der LSTM Macro-F1 **37,96 %**, der Transformer 29,49 %.
+- 2026 ist ein Teiljahr; alle Modelle liegen deutlich unter ihren Gesamtwerten.
 
-- Accuracy: 30,64 %
-- Macro Precision: 10,21 %
-- Macro Recall: 33,33 %
-- Macro-F1: 15,63 %
+![Zeitliche Generalisierung – Macro-F1](reports/figures/temporal_generalization_macro_f1.png)
 
----
+![Zeitliche Generalisierung – Stress-Increase-Recall](reports/figures/temporal_generalization_increase_recall.png)
 
-# Explainability
+Vollständige Tabelle: [`reports/temporal_generalization.md`](reports/temporal_generalization.md)
 
-Der finale Transformer kann Attention Maps zurückgeben.
+## Explainability und Fehleranalyse
 
-Analysiert wurden:
+Der finale Transformer kann Attention Maps zurückgeben. Analysiert wurden ein korrekt erkannter und ein falsch klassifizierter tatsächlicher Stressanstieg sowie die häufigsten Fehler.
 
-- eine korrekt erkannte `Stress Increase`-Vorhersage
-- eine falsch klassifizierte tatsächliche `Stress Increase`-Beobachtung
-- klassenspezifische Fehler
-- häufigste Fehlklassifikationen
-
-## Korrektes Stress-Increase-Beispiel
-
-Modellwahrscheinlichkeiten:
+Korrektes Beispiel:
 
 ```text
 Stress Decrease: 27,77 %
@@ -563,91 +295,22 @@ Stable:          35,40 %
 Stress Increase: 36,83 %
 ```
 
-![Attention – korrekt erkannter Stressanstieg](reports/figures/transformer_attention_correct_increase.png)
-
-## Falsch klassifiziertes Stress-Increase-Beispiel
-
-Tatsächliche Klasse:
+Falsches Beispiel:
 
 ```text
-Stress Increase
-```
+Tatsächlich:     Stress Increase
+Vorhersage:      Stress Decrease
 
-Vorhersage:
-
-```text
-Stress Decrease
-```
-
-Wahrscheinlichkeiten:
-
-```text
 Stress Decrease: 58,34 %
 Stable:          13,84 %
 Stress Increase: 27,81 %
 ```
 
-Dieses Beispiel zeigt:
+Attention ist eine Interpretationshilfe, aber kein Beweis für Kausalität oder direkte Feature Importance.
 
-> Eine höhere Modellkonfidenz garantiert keine korrekte Vorhersage.
+## Robustheit
 
-![Attention – falsch klassifizierter Stressanstieg](reports/figures/transformer_attention_misclassified_increase.png)
-
-## Attention-Interpretation
-
-Attention-Gewichte werden als Interpretationshilfe verwendet.
-
-Sie beweisen nicht:
-
-- Kausalität
-- wirtschaftliche Ursache-Wirkungs-Beziehungen
-- direkte Feature Importance
-
----
-
-# Fehleranalyse
-
-Korrekte Vorhersagen des Transformers:
-
-```text
-Stress Decrease:
-368 / 519 = 70,91 %
-
-Stable:
-307 / 638 = 48,12 %
-
-Stress Increase:
-44 / 537 = 8,19 %
-```
-
-Häufigste Fehlklassifikationen:
-
-```text
-Stable → Stress Decrease:          279
-Stress Increase → Stress Decrease: 256
-Stress Increase → Stable:          237
-Stress Decrease → Stable:          122
-Stable → Stress Increase:           52
-Stress Decrease → Stress Increase:  29
-```
-
-Von 537 tatsächlichen Stressanstiegen erkennt der Transformer nur 44 korrekt.
-
-![Korrekte und falsche Vorhersagen nach Klasse](reports/figures/transformer_correct_vs_incorrect_by_class.png)
-
----
-
-# Robustheitsanalyse
-
-Der finale Transformer wurde auf Empfindlichkeit gegenüber kontrollierten Eingabestörungen getestet.
-
-Dazu wurde Gaußsches Rauschen auf die bereits standardisierten Features gegeben.
-
-Das Modell wurde dabei:
-
-- nicht neu trainiert
-- nicht weiter optimiert
-- nicht anhand der Robustheitsergebnisse verändert
+**Zusätzliches Wissen / praktische Robustheitsimplementierung:** Der finale Transformer wurde ohne Retraining mit künstlichem Gaußschem Rauschen auf den standardisierten Testfeatures untersucht.
 
 | Rauschen | Accuracy | Macro-F1 | Increase Recall | Prediction Agreement |
 |---:|---:|---:|---:|---:|
@@ -657,369 +320,110 @@ Das Modell wurde dabei:
 | 20 % | 41,15 % | 35,87 % | 7,45 % | 85,66 % |
 | 50 % | 39,37 % | 32,94 % | 4,66 % | 73,32 % |
 
-Kleine Störungen verändern die Gesamtleistung nur begrenzt. Größere Störungen führen zunehmend zu abweichenden Entscheidungen.
+Der Test ist eine kontrollierte synthetische Störung und keine Simulation einer realen Finanzkrise.
 
-![Robustheitsanalyse](reports/figures/transformer_robustness_noise.png)
+## Limitationen
 
----
+- bester Test-Macro-F1 nur 37,38 %
+- sehr schwache harte Klassifikation tatsächlicher Stressanstiege
+- deutliche zeitliche Schwankungen zwischen den Testjahren
+- relevante LSTM-Seed-Sensitivität
+- nur neun OFR-Merkmale
+- fester Prognosehorizont und feste Fensterlänge
+- Attention ist keine Kausalität
+- synthetischer Robustheitstest bildet reale Marktbrüche nur unvollständig ab
+- keine Trading-Evaluation oder Produktionsumgebung
 
-# Limitationen
+## Fairness und Responsible AI
 
-## Begrenzte Modellleistung
+Der Datensatz enthält aggregierte Finanzmarktinformationen und keine personenbezogenen Merkmale. Klassische personenbezogene Fairnessmetriken sind deshalb für diese Aufgabe nicht direkt anwendbar.
 
-Der beste Test-Macro-F1 liegt unter 40 %.
+Das Modell ist kein autonomes Finanzentscheidungssystem. Für eine spätere produktive Nutzung wären unter anderem Data Quality Monitoring, Drift Detection, Model Versioning, Confidence Monitoring, Fallback-Regeln und menschliche Kontrolle notwendig.
 
-Die Modelle demonstrieren einen vollständigen Forschungsworkflow, sind aber nicht produktionsreif.
+## Drei nächste Schritte
 
-## Schwache Stress-Increase-Erkennung
+1. **Stress-Increase-Erkennung verbessern:** zusätzliche Features und alternative, ausschließlich auf Training/Validation untersuchte Ansätze.
+2. **Datenbasis erweitern:** beispielsweise Zinsen, Zinsstruktur, Inflation, Arbeitsmarkt-, Kredit- und Volatilitätsdaten.
+3. **Walk-Forward-Evaluation:** wiederholte chronologische Trainings-, Validierungs- und Testfenster zur robusteren Bewertung unter veränderten Marktregimen.
 
-Alle Modelle besitzen Schwierigkeiten bei der Erkennung steigenden Finanzstresses.
+## Reproduzierbarkeit
 
-## Nichtstationäre Finanzmärkte
+- eingefrorener OFR-Snapshot mit SHA-256-Prüfung
+- feste chronologische Splits
+- train-only Scaling
+- Zielgrenzen ausschließlich aus dem Training
+- gespeicherte Checkpoints und Trainingsverläufe
+- dokumentierte Hyperparameter und Seeds
+- gepinnte Kernabhängigkeiten
+- automatisierte Tests
 
-Beziehungen zwischen Variablen können sich über unterschiedliche Marktregime hinweg verändern.
-
-## Begrenzter Feature-Raum
-
-Aktuell werden ausschließlich neun OFR-Merkmale verwendet.
-
-Nicht enthalten sind beispielsweise:
-
-- Leitzinsen
-- Zinsstrukturkurven
-- Inflation
-- Arbeitsmarktdaten
-- zusätzliche Credit Spreads
-- weitere Volatilitätsdaten
-- Unternehmensfundamentaldaten
-- Nachrichten oder Textinformationen
-
-## Fester Prognosehorizont
-
-Der aktuelle Prognosehorizont beträgt fünf Handelstage.
-
-## Festes historisches Fenster
-
-Die Modelle verwenden ein 60-Handelstage-Fenster.
-
-## Attention ist keine Kausalität
-
-Attention erklärt interne Modellbeziehungen, aber keine wirtschaftlichen Ursache-Wirkungs-Zusammenhänge.
-
-## Synthetischer Robustheitstest
-
-Gaußsches Rauschen bildet reale Finanzkrisen oder strukturelle Brüche nicht vollständig ab.
-
-## Keine Trading-Performance
-
-Das Projekt untersucht keine:
-
-- Renditen
-- Transaktionskosten
-- Slippage
-- Positionsgrößen
-- Drawdowns
-- Sharpe Ratio
-- Portfolioallokationen
-
-Die Modellleistung ist daher kein Nachweis einer profitablen Trading-Strategie.
-
----
-
-# Fairness
-
-Der OFR-Datensatz enthält aggregierte Finanzmarktinformationen und keine personenbezogenen Merkmale.
-
-Klassische personenbezogene Fairnessmetriken sind deshalb für die aktuelle Aufgabe nicht direkt anwendbar.
-
-Sollten Modelloutputs zukünftig Entscheidungen über einzelne Kunden, Kreditnehmer oder Versicherungsnehmer beeinflussen, wäre eine separate Fairnessanalyse notwendig.
-
----
-
-# Responsible AI
-
-Das Modell ist kein autonomes Finanzentscheidungssystem.
-
-Vorhersagen können falsch sein.
-
-Für eine zukünftige produktive Anwendung wären zusätzliche Sicherheits- und Governance-Bausteine notwendig:
-
-- Data Quality Monitoring
-- Model Monitoring
-- Drift Detection
-- Model Versioning
-- reproduzierbare Inferenz
-- Confidence Monitoring
-- Fallback-Regeln
-- menschliche Kontrolle
-
----
-
-# Drei zentrale nächste Schritte
-
-## 1. Stress-Increase-Erkennung verbessern
-
-Höchste Priorität ist die Verbesserung des Recalls für steigenden Finanzstress.
-
-Mögliche Experimente:
-
-- zusätzliche Features
-- alternative Klassengrenzen
-- andere historische Fenstergrößen
-- weitere Sequenzarchitekturen
-- weitere Ansätze für schwierige Klassen
-
-## 2. Datenbasis erweitern
-
-Zukünftige Versionen könnten zusätzliche Finanz- und Makrodaten integrieren:
-
-- Leitzinsen
-- Staatsanleiherenditen
-- Zinsstrukturkurven
-- Inflation
-- Arbeitsmarktdaten
-- Volatilitätsindikatoren
-- Kreditmarktinformationen
-
-## 3. Walk-Forward-Evaluation
-
-Statt nur eines festen Splits könnte eine spätere Version mehrere chronologisch aufeinanderfolgende Trainings- und Testperioden verwenden.
+Aktueller Qualitätsstand:
 
 ```text
-Trainieren
-    ↓
-Validieren
-    ↓
-auf Zukunft testen
-    ↓
-Zeitfenster nach vorne verschieben
-    ↓
-wiederholen
+65 passed
+ruff check . → All checks passed!
+git diff --check → sauber
 ```
 
----
-
-# Projektstruktur
-
-```text
-deep-learning-critical-systems/
-├── artifacts/
-│   ├── checkpoints/
-│   └── logs/
-├── data/
-├── reports/
-│   ├── discussion.md
-│   └── figures/
-├── src/
-│   └── deep_learning_critical_systems/
-│       ├── data/
-│       ├── evaluation/
-│       ├── models/
-│       └── training/
-├── tests/
-├── pyproject.toml
-└── README.md
-```
-
----
-
-# Technischer Stack
+## Technischer Stack
 
 - Python 3.13
-- PyTorch 2.13
-- NumPy
-- pandas
-- scikit-learn
-- Matplotlib
-- seaborn
-- pytest
-- certifi
-- Git
-- GitHub
-- Apple Metal Performance Shaders (MPS)
+- PyTorch 2.13.0
+- NumPy 2.5.1
+- pandas 3.0.5
+- scikit-learn 1.9.0
+- Matplotlib 3.11.1
+- pytest 8.4.2
+- certifi 2026.07.22
+- Apple MPS
+- Git / GitHub
 
----
-
-# Installation
-
-Repository klonen:
+## Zentrale Befehle
 
 ```bash
-git clone https://github.com/Maik-Huebner/deep-learning-critical-systems.git
-cd deep-learning-critical-systems
+pip install -e ".[dev]"
+pytest -q
+ruff check .
 ```
 
-Virtuelle Umgebung erstellen:
-
-```bash
-python -m venv .venv
-```
-
-Aktivieren unter macOS/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Projekt installieren:
-
-```bash
-pip install -e .
-```
-
----
-
-# Daten laden und analysieren
-
-```bash
-python -m deep_learning_critical_systems.data.load_ofr_fsi
-python -m deep_learning_critical_systems.data.explore_ofr_fsi
-```
-
----
-
-# Modelle trainieren
-
-MLP:
-
-```bash
-python -m deep_learning_critical_systems.training.train_mlp
-```
-
-LSTM:
-
-```bash
-python -m deep_learning_critical_systems.training.train_lstm
-```
-
-Transformer Baseline:
-
-```bash
-python -m deep_learning_critical_systems.training.train_transformer
-```
-
----
-
-# Transformer-Tuning
-
-Stage 1:
-
-```bash
-python -m deep_learning_critical_systems.training.tune_transformer
-```
-
-Stage 2:
-
-```bash
-python -m deep_learning_critical_systems.training.tune_transformer_stage2
-```
-
----
-
-# Evaluation
+Evaluation:
 
 ```bash
 python -m deep_learning_critical_systems.evaluation.evaluate_mlp
 python -m deep_learning_critical_systems.evaluation.evaluate_lstm
 python -m deep_learning_critical_systems.evaluation.evaluate_transformer
 python -m deep_learning_critical_systems.evaluation.compare_models
-```
-
-Explainability:
-
-```bash
 python -m deep_learning_critical_systems.evaluation.analyze_transformer_explainability
-```
-
-Robustheit:
-
-```bash
 python -m deep_learning_critical_systems.evaluation.analyze_transformer_robustness
+python -m deep_learning_critical_systems.evaluation.analyze_temporal_generalization
+python -m deep_learning_critical_systems.evaluation.analyze_roc_auc
 ```
 
-Transformer-Plots:
+## Ausführliche Dokumentation
 
-```bash
-python -m deep_learning_critical_systems.evaluation.plot_transformer_results
-```
+- [`reports/project_description.md`](reports/project_description.md) – formale Projektbeschreibung
+- [`reports/discussion.md`](reports/discussion.md) – Interpretation, Limitationen und Responsible AI
+- [`reports/temporal_generalization.md`](reports/temporal_generalization.md) – Jahresanalyse 2020–2026
+- [`reports/roc_auc.md`](reports/roc_auc.md) – ROC-AUC-Auswertung
 
----
+## Quellen
 
-# Tests
+- Office of Financial Research: OFR Financial Stress Index
+  `https://www.financialresearch.gov/financial-stress-index/`
+- Paul Monin (2017): *The OFR Financial Stress Index*
+  `https://www.financialresearch.gov/working-papers/2017/10/25/the-ofr-financial-stability-index/`
+- Vaswani et al. (2017): *Attention Is All You Need*
+  `https://arxiv.org/abs/1706.03762`
+- Hochreiter & Schmidhuber (1997): *Long Short-Term Memory*, Neural Computation 9(8), 1735–1780
+  `https://doi.org/10.1162/neco.1997.9.8.1735`
+- PyTorch: `https://pytorch.org/`
+- scikit-learn: `https://scikit-learn.org/`
 
-```bash
-pytest -q
-```
+## Projektabgrenzung
 
-Aktueller Stand:
+Das Projekt ist ein reproduzierbarer **Financial-AI-Forschungsprototyp** und ausdrücklich kein autonomes Handelssystem, keine Anlageberatung, keine produktive Risikoplattform und kein Nachweis einer profitablen Trading-Strategie.
 
-```text
-58 passed
-```
-
----
-
-# Reproduzierbarkeit
-
-Das Projekt verwendet einen festen Random Seed:
-
-```text
-42
-```
-
-Weitere Maßnahmen:
-
-- chronologische Splits
-- train-only Scaling
-- fest definierte Zielgrenzen
-- dokumentierte Modellarchitekturen
-- gespeicherte Training Histories
-- gespeicherte Checkpoints
-- dokumentierte Hyperparameter
-- reproduzierbare Tuning-Runs
-- automatisierte Tests
-
-GPU-/MPS-Ausführungen können trotz festem Seed je nach Hardware und Bibliotheksversion minimale numerische Unterschiede erzeugen.
-
----
-
-# Ausführliche Diskussion
-
-Die ausführliche deutschsprachige Diskussion mit:
-
-- Ergebnissen
-- Hyperparameter-Tuning
-- Generalisierung
-- Explainability
-- Robustheit
-- Limitationen
-- Fairness
-- Responsible AI
-- nächsten Schritten
-
-befindet sich unter:
-
-```text
-reports/discussion.md
-```
-
----
-
-# Portfolio
-
-Projektseite:
-
-https://maik-huebner.de/projects/deep-learning-critical-systems
-
----
-
-# Autor
+## Autor
 
 **Maik Hübner**
-
-AI Engineering
-Machine Learning
-Deep Learning
-Python
-PyTorch
-Financial AI
+AI Engineering · Machine Learning · Deep Learning · Python · PyTorch · Financial AI

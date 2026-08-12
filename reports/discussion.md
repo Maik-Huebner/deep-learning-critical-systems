@@ -98,12 +98,11 @@ zurückgehaltenen Testzeitraum verglichen.
 | Modell | Accuracy | Macro-F1 | Recall Stress Increase |
 |---|---:|---:|---:|
 | MLP | 43,92 % | 33,44 % | 0,37 % |
-| LSTM | 44,33 % | 37,90 % | 6,15 % |
+| LSTM | 41,79 % | 36,43 % | 6,89 % |
 | Transformer | 42,44 % | 37,38 % | 8,19 % |
 | Majority-Baseline | 30,64 % | 15,63 % | 0,00 % |
 
-Das LSTM erreicht die höchste Test-Accuracy und den höchsten
-Test-Macro-F1.
+Das MLP erreicht die höchste Test-Accuracy. Der Transformer erreicht dagegen den höchsten Test-Macro-F1.
 
 Der Transformer erreicht dagegen den höchsten Recall für die besonders
 schwierige Klasse `Stress Increase`.
@@ -149,11 +148,11 @@ historischen Fensters berücksichtigen.
 
 Testresultate:
 
-- Accuracy: 44,33 %
-- Macro-F1: 37,90 %
-- Recall Stress Increase: 6,15 %
+- Accuracy: 41,79 %
+- Macro-F1: 36,43 %
+- Recall Stress Increase: 6,89 %
 
-Das LSTM erreicht den besten Gesamtwert beim Macro-F1.
+Das finale LSTM verbessert die Klassenbalance gegenüber dem MLP, liegt beim Macro-F1 aber hinter dem Transformer.
 
 Im Vergleich zum MLP verbessert es insbesondere die Erkennung der
 Klasse `Stress Increase`.
@@ -162,6 +161,32 @@ Trotzdem bleibt auch beim LSTM die Erkennung steigenden Finanzstresses
 schwach.
 
 ---
+
+
+### Finale Validation-basierte LSTM-Auswahl
+
+Für einen faireren Vergleich wurde das LSTM ebenfalls systematisch mit Training und Validation abgestimmt. `L1` und `L9` lagen bei Seed 42 nur rund 0,001 Validation-Macro-F1 auseinander.
+
+**Zusätzliches Wissen / zusätzliche methodische Absicherung:** Mit den Seeds `42`, `123` und `2026` ergaben sich:
+
+```text
+L1: Mean Val. Macro-F1 0,2875 ± 0,0715
+L9: Mean Val. Macro-F1 0,2813 ± 0,0768
+```
+
+Damit wurde `L1` gewählt. Gleichzeitig zeigt die Streuung eine deutliche Seed-Sensitivität.
+
+Finaler LSTM-Test:
+
+```text
+Accuracy:               41,79 %
+Macro Precision:        38,76 %
+Macro Recall:           40,94 %
+Macro-F1:               36,43 %
+Stress Increase Recall:  6,89 %
+```
+
+Die frühere ungetunte LSTM-Version erzielte im Test etwas bessere Gesamtwerte. Eine Rückauswahl anhand dieser Testwerte wäre jedoch methodisch falsch. Das Testset bleibt finale Evaluation und wird nicht zum Optimierungsinstrument.
 
 ## 7. Transformer
 
@@ -313,6 +338,46 @@ Ein Muster, das im Trainingszeitraum funktioniert, muss deshalb nicht
 unverändert in späteren Marktphasen bestehen bleiben.
 
 ---
+
+
+### 10.1 Jahresanalyse 2020–2026
+
+Die bereits eingefrorenen Modelle wurden nach Abschluss der Modellauswahl separat nach Testjahr ausgewertet. Diese Analyse ist rein post hoc.
+
+Macro-F1:
+
+```text
+Jahr     MLP     LSTM    Transformer
+2020   35,49 %  36,66 %   38,00 %
+2021   18,67 %  32,68 %   37,67 %
+2022   25,53 %  28,72 %   31,03 %
+2023   35,41 %  28,82 %   36,17 %
+2024   23,06 %  33,70 %   38,38 %
+2025   30,64 %  37,96 %   29,49 %
+2026*  15,65 %  29,07 %   26,37 %
+```
+
+`* 2026 ist ein Teiljahr.`
+
+Beim Stress-Increase-Recall ist 2021 besonders auffällig:
+
+```text
+MLP:          0,00 %
+LSTM:        25,84 %
+Transformer: 41,57 %
+```
+
+In mehreren anderen Jahren fällt diese Kennzahl auf 0 % oder nahezu 0 %. Die Generalisierung ist damit klar regimeabhängig.
+
+### 10.2 ROC-AUC
+
+| Modell | Macro AUC | Rückgang | Stabil | Anstieg |
+|---|---:|---:|---:|---:|
+| MLP | 0,5801 | 0,6296 | 0,5572 | 0,5534 |
+| LSTM | 0,5970 | 0,6333 | 0,5944 | **0,5632** |
+| Transformer | **0,6183** | **0,6863** | **0,6207** | 0,5481 |
+
+Der Transformer besitzt die beste Macro-ROC-AUC, während der LSTM bei der Klasse Stressanstieg leicht höher liegt. Die Werte zeigen nur moderate Trennfähigkeit und werden entsprechend vorsichtig interpretiert.
 
 ## 11. Klassenspezifische Leistung des Transformers
 
@@ -492,12 +557,22 @@ wichtig.
 
 ### 15.3 Nichtstationäre Finanzmärkte
 
+Die Jahresanalyse 2020–2026 macht die zeitliche Instabilität empirisch sichtbar. Unterschiedliche Modelle führen in unterschiedlichen Jahren, und der Stress-Increase-Recall schwankt besonders stark.
+
 Finanzmärkte verändern sich im Zeitverlauf.
 
 Historische Beziehungen zwischen Merkmalen können in zukünftigen
 Marktphasen schwächer werden oder sich vollständig verändern.
 
-### 15.4 Begrenzte Datenbasis
+### 15.4 LSTM-Seed-Sensitivität
+
+Die Drei-Seed-Prüfung zeigt deutliche Schwankungen der LSTM-Validation-Ergebnisse. Reproduzierbarkeit eines einzelnen Runs ist daher nicht mit Stabilität über verschiedene Initialisierungen gleichzusetzen.
+
+### 15.5 Moderate ROC-AUC
+
+Die Macro-ROC-AUC liegt beim besten Modell bei 0,6183. Das liegt über Zufallsniveau, belegt aber keine starke Trennfähigkeit.
+
+### 15.6 Begrenzte Datenbasis
 
 Das Projekt verwendet ausschließlich die neun Variablen des
 OFR-FSI-Datensatzes.
@@ -513,34 +588,34 @@ Nicht enthalten sind beispielsweise:
 - Unternehmensfundamentaldaten
 - Nachrichten oder andere Textdaten
 
-### 15.5 Fester Prognosehorizont
+### 15.7 Fester Prognosehorizont
 
 Das Projekt verwendet einen Prognosehorizont von fünf Handelstagen.
 
 Andere Horizonte könnten zu anderen Ergebnissen führen.
 
-### 15.6 Festes historisches Fenster
+### 15.8 Festes historisches Fenster
 
 Alle Modelle verwenden 60 Handelstage als Eingabefenster.
 
 Andere Fenstergrößen wurden innerhalb dieses Projekts nicht
 systematisch untersucht.
 
-### 15.7 Attention ist keine Kausalität
+### 15.9 Attention ist keine Kausalität
 
 Attention-Plots ermöglichen Einblicke in die interne zeitliche
 Verarbeitung.
 
 Sie beweisen keine Ursache-Wirkungs-Beziehung.
 
-### 15.8 Synthetischer Robustheitstest
+### 15.10 Synthetischer Robustheitstest
 
 Künstliches Gaußsches Rauschen ist nur ein kontrollierter Stresstest.
 
 Es bildet reale Marktkrisen, strukturelle Brüche, Datenfehler oder
 fehlende Daten nicht vollständig ab.
 
-### 15.9 Keine Trading-Strategie
+### 15.11 Keine Trading-Strategie
 
 Das Projekt prognostiziert Finanzstressregime.
 
@@ -557,7 +632,7 @@ Es untersucht nicht:
 Die Ergebnisse sind daher kein Nachweis für eine profitable
 Trading-Strategie.
 
-### 15.10 Keine Produktionsumgebung
+### 15.12 Keine Produktionsumgebung
 
 Das Projekt ist ein Forschungsprototyp.
 
@@ -688,8 +763,7 @@ mit Daten- und Model-Drift-Monitoring kombiniert werden.
 
 ## 19. Fazit
 
-Das Projekt demonstriert einen vollständigen Deep-Learning-Workflow für
-eine reale Finanzzeitreihen-Klassifikationsaufgabe.
+Das Projekt demonstriert einen vollständigen Deep-Learning-Workflow für eine reale Finanzzeitreihen-Klassifikationsaufgabe. Die zusätzliche Snapshot-Prüfung, LSTM-Stabilitätsanalyse, Jahresauswertung und ROC-AUC ergänzen den finalen Forschungsstand.
 
 Umgesetzt wurden:
 
@@ -716,8 +790,7 @@ Umgesetzt wurden:
 - Responsible-AI-Betrachtung
 - konkrete nächste Entwicklungsschritte
 
-Das LSTM erreicht auf dem unbekannten Testzeitraum den besten
-Macro-F1.
+Der Transformer erreicht auf dem unbekannten Testzeitraum den besten Macro-F1 der drei neuronalen Modelle.
 
 Der Transformer erreicht innerhalb der drei neuronalen Modelle den
 höchsten Recall für steigenden Finanzstress.
