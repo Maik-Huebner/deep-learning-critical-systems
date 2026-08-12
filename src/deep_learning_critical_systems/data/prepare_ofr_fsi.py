@@ -20,6 +20,7 @@ future information.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 
 import numpy as np
@@ -38,6 +39,12 @@ FORECAST_HORIZON = 5
 
 TRAIN_END = "2016-12-31"
 VALIDATION_END = "2019-12-31"
+ANALYSIS_END = "2026-08-05"
+
+REFERENCE_SNAPSHOT_ROWS = 6730
+REFERENCE_SNAPSHOT_SHA256 = (
+    "38535be9eadd819493c3b77e11885deb14e344d97007551f87c76700cc829c9c"
+)
 
 DATE_COLUMN = "Date"
 
@@ -141,6 +148,95 @@ def clean_raw_data(data: pd.DataFrame) -> pd.DataFrame:
         )
 
     return data[required_columns]
+
+
+def select_analysis_snapshot(
+    data: pd.DataFrame,
+    analysis_end: str = ANALYSIS_END,
+) -> pd.DataFrame:
+    """Freeze the dataset at the project's documented analysis end date."""
+
+    cutoff = pd.Timestamp(
+        analysis_end
+    )
+
+    snapshot = (
+        data.loc[
+            data[DATE_COLUMN] <= cutoff
+        ]
+        .copy()
+        .reset_index(drop=True)
+    )
+
+    if snapshot.empty:
+        raise ValueError(
+            "No OFR observations are available on or before "
+            f"the analysis cutoff {analysis_end}."
+        )
+
+    if snapshot[DATE_COLUMN].max() != cutoff:
+        raise ValueError(
+            "The OFR snapshot does not contain the documented "
+            f"analysis end date {analysis_end}."
+        )
+
+    return snapshot
+
+
+def calculate_snapshot_sha256(
+    data: pd.DataFrame,
+) -> str:
+    """Create a canonical SHA-256 hash for a cleaned OFR snapshot."""
+
+    canonical_data = data[
+        [
+            DATE_COLUMN,
+            *FEATURE_COLUMNS,
+        ]
+    ].copy()
+
+    canonical_data[DATE_COLUMN] = pd.to_datetime(
+        canonical_data[DATE_COLUMN],
+        errors="raise",
+    ).dt.strftime("%Y-%m-%d")
+
+    canonical_csv = canonical_data.to_csv(
+        index=False,
+        lineterminator="\n",
+        float_format="%.15g",
+    )
+
+    return hashlib.sha256(
+        canonical_csv.encode("utf-8")
+    ).hexdigest()
+
+
+def verify_reference_snapshot(
+    data: pd.DataFrame,
+    expected_rows: int = REFERENCE_SNAPSHOT_ROWS,
+    expected_sha256: str = REFERENCE_SNAPSHOT_SHA256,
+) -> str:
+    """Verify that the analysis snapshot matches the reported experiment."""
+
+    if len(data) != expected_rows:
+        raise ValueError(
+            "OFR analysis snapshot row count differs from the "
+            "reference experiment: "
+            f"expected {expected_rows}, received {len(data)}."
+        )
+
+    snapshot_sha256 = calculate_snapshot_sha256(
+        data
+    )
+
+    if snapshot_sha256 != expected_sha256:
+        raise ValueError(
+            "OFR analysis snapshot differs from the reference "
+            "experiment. Expected canonical SHA-256 "
+            f"{expected_sha256}, received {snapshot_sha256}."
+        )
+
+    return snapshot_sha256
 
 
 # ---------------------------------------------------------------------
@@ -676,6 +772,14 @@ def prepare_ofr_data(
         raw_data
     )
 
+    data = select_analysis_snapshot(
+        data
+    )
+
+    verify_reference_snapshot(
+        data
+    )
+
     (
         train,
         validation,
@@ -879,6 +983,26 @@ def print_summary(
             prepared.high_threshold,
             4,
         ),
+    )
+
+    print()
+    print(
+        "Reference analysis snapshot:"
+    )
+
+    print(
+        "Analysis end:",
+        ANALYSIS_END,
+    )
+
+    print(
+        "Rows:",
+        REFERENCE_SNAPSHOT_ROWS,
+    )
+
+    print(
+        "Canonical SHA-256:",
+        REFERENCE_SNAPSHOT_SHA256,
     )
 
     print()

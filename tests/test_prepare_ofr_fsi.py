@@ -2,17 +2,24 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from deep_learning_critical_systems.data.prepare_ofr_fsi import (
+    ANALYSIS_END,
     FEATURE_COLUMNS,
+    REFERENCE_SNAPSHOT_ROWS,
+    REFERENCE_SNAPSHOT_SHA256,
     add_future_stress_change,
     add_target_classes,
+    calculate_snapshot_sha256,
     calculate_training_thresholds,
     clean_raw_data,
     create_sequences,
     create_sequences_with_history,
     scale_features,
+    select_analysis_snapshot,
     split_chronologically,
+    verify_reference_snapshot,
 )
 
 
@@ -51,6 +58,39 @@ def create_test_dataframe() -> pd.DataFrame:
     return data
 
 
+def create_snapshot_test_dataframe() -> pd.DataFrame:
+    """Create deterministic OFR-like rows around the analysis cutoff."""
+
+    dates = pd.date_range(
+        start="2026-08-03",
+        end="2026-08-10",
+        freq="B",
+    )
+
+    n_rows = len(dates)
+
+    base_signal = np.linspace(
+        -1.0,
+        1.0,
+        n_rows,
+    )
+
+    return pd.DataFrame(
+        {
+            "Date": dates,
+            "OFR FSI": base_signal,
+            "Credit": base_signal * 0.5,
+            "Equity valuation": base_signal * 0.3,
+            "Safe assets": base_signal * -0.2,
+            "Funding": base_signal * 0.4,
+            "Volatility": base_signal * 0.6,
+            "United States": base_signal * 0.7,
+            "Other advanced economies": base_signal * 0.2,
+            "Emerging markets": base_signal * 0.1,
+        }
+    )
+
+
 def test_clean_raw_data_keeps_required_columns():
     """Cleaning should preserve exactly the required project columns."""
 
@@ -66,6 +106,166 @@ def test_clean_raw_data_keeps_required_columns():
     assert cleaned.columns.tolist() == expected_columns
     assert cleaned.isna().sum().sum() == 0
     assert cleaned["Date"].is_monotonic_increasing
+
+
+def test_reference_snapshot_metadata_is_frozen():
+    """Reference metadata should match the documented experiment."""
+
+    assert ANALYSIS_END == "2026-08-05"
+    assert REFERENCE_SNAPSHOT_ROWS == 6730
+    assert (
+        REFERENCE_SNAPSHOT_SHA256
+        == "38535be9eadd819493c3b77e11885deb14e344d97007551f87c76700cc829c9c"
+    )
+
+
+def test_analysis_snapshot_truncates_newer_observations():
+    """Rows after the documented analysis cutoff must be excluded."""
+
+    data = clean_raw_data(
+        create_snapshot_test_dataframe()
+    )
+
+    snapshot = select_analysis_snapshot(
+        data
+    )
+
+    cutoff = pd.Timestamp(
+        ANALYSIS_END
+    )
+
+    assert snapshot["Date"].max() == cutoff
+    assert (
+        snapshot["Date"] <= cutoff
+    ).all()
+    assert len(snapshot) < len(data)
+
+
+def test_analysis_snapshot_requires_documented_cutoff_date():
+    """The snapshot must contain the documented final observation."""
+
+    data = clean_raw_data(
+        create_snapshot_test_dataframe()
+    )
+
+    data = data.loc[
+        data["Date"] != pd.Timestamp(
+            ANALYSIS_END
+        )
+    ].copy()
+
+    with pytest.raises(
+        ValueError,
+        match="analysis end date",
+    ):
+        select_analysis_snapshot(
+            data
+        )
+
+
+def test_snapshot_hash_is_deterministic():
+    """The canonical snapshot hash should be stable for identical data."""
+
+    data = clean_raw_data(
+        create_snapshot_test_dataframe()
+    )
+
+    snapshot = select_analysis_snapshot(
+        data
+    )
+
+    first_hash = calculate_snapshot_sha256(
+        snapshot
+    )
+
+    second_hash = calculate_snapshot_sha256(
+        snapshot.copy()
+    )
+
+    assert first_hash == second_hash
+    assert len(first_hash) == 64
+
+
+def test_reference_snapshot_verification_accepts_matching_data():
+    """Matching row count and canonical hash should pass verification."""
+
+    data = clean_raw_data(
+        create_snapshot_test_dataframe()
+    )
+
+    snapshot = select_analysis_snapshot(
+        data
+    )
+
+    expected_hash = calculate_snapshot_sha256(
+        snapshot
+    )
+
+    verified_hash = verify_reference_snapshot(
+        snapshot,
+        expected_rows=len(snapshot),
+        expected_sha256=expected_hash,
+    )
+
+    assert verified_hash == expected_hash
+
+
+def test_reference_snapshot_verification_rejects_wrong_row_count():
+    """A changed snapshot length must fail provenance verification."""
+
+    data = clean_raw_data(
+        create_snapshot_test_dataframe()
+    )
+
+    snapshot = select_analysis_snapshot(
+        data
+    )
+
+    expected_hash = calculate_snapshot_sha256(
+        snapshot
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="row count differs",
+    ):
+        verify_reference_snapshot(
+            snapshot,
+            expected_rows=len(snapshot) + 1,
+            expected_sha256=expected_hash,
+        )
+
+
+def test_reference_snapshot_verification_rejects_modified_data():
+    """A historical value change must fail canonical hash verification."""
+
+    data = clean_raw_data(
+        create_snapshot_test_dataframe()
+    )
+
+    snapshot = select_analysis_snapshot(
+        data
+    )
+
+    expected_hash = calculate_snapshot_sha256(
+        snapshot
+    )
+
+    modified_snapshot = snapshot.copy()
+    modified_snapshot.loc[
+        0,
+        "Credit",
+    ] += 0.001
+
+    with pytest.raises(
+        ValueError,
+        match="canonical SHA-256",
+    ):
+        verify_reference_snapshot(
+            modified_snapshot,
+            expected_rows=len(modified_snapshot),
+            expected_sha256=expected_hash,
+        )
 
 
 def test_chronological_split_has_no_overlap():
