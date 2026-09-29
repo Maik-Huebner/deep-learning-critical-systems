@@ -10,7 +10,6 @@ from deep_learning_critical_systems.data.prepare_ofr_fsi import (
     PreparedOFRData,
 )
 
-
 DEFAULT_BATCH_SIZE = 64
 
 
@@ -38,20 +37,14 @@ class OFRSequenceDataset(Dataset):
 
         if len(features) != len(targets):
             raise ValueError(
-                "Features and targets must contain "
-                "the same number of samples."
+                "Features and targets must contain the same number of samples."
             )
 
         if features.ndim != 3:
-            raise ValueError(
-                "Features must have shape "
-                "(samples, timesteps, features)."
-            )
+            raise ValueError("Features must have shape (samples, timesteps, features).")
 
         if targets.ndim != 1:
-            raise ValueError(
-                "Targets must have shape (samples,)."
-            )
+            raise ValueError("Targets must have shape (samples,).")
 
         self.features = torch.tensor(
             features,
@@ -129,17 +122,13 @@ def create_data_loaders(
     """
 
     if batch_size <= 0:
-        raise ValueError(
-            "Batch size must be greater than zero."
-        )
+        raise ValueError("Batch size must be greater than zero.")
 
     (
         train_dataset,
         validation_dataset,
         test_dataset,
-    ) = create_datasets(
-        prepared_data
-    )
+    ) = create_datasets(prepared_data)
 
     train_loader = DataLoader(
         train_dataset,

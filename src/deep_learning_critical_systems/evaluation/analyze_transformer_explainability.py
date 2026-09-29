@@ -39,43 +39,23 @@ from deep_learning_critical_systems.training.trainer import (
     select_device,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 CHECKPOINT_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "checkpoints"
-    / "transformer_tuned_model.pt"
+    PROJECT_ROOT / "artifacts" / "checkpoints" / "transformer_tuned_model.pt"
 )
 
-LOG_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-    / "transformer_explainability.json"
-)
+LOG_PATH = PROJECT_ROOT / "artifacts" / "logs" / "transformer_explainability.json"
 
-FIGURE_DIR = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-)
+FIGURE_DIR = PROJECT_ROOT / "reports" / "figures"
 
-CORRECT_ATTENTION_PATH = (
-    FIGURE_DIR
-    / "transformer_attention_correct_increase.png"
-)
+CORRECT_ATTENTION_PATH = FIGURE_DIR / "transformer_attention_correct_increase.png"
 
 INCORRECT_ATTENTION_PATH = (
-    FIGURE_DIR
-    / "transformer_attention_misclassified_increase.png"
+    FIGURE_DIR / "transformer_attention_misclassified_increase.png"
 )
 
-ERROR_DISTRIBUTION_PATH = (
-    FIGURE_DIR
-    / "transformer_correct_vs_incorrect_by_class.png"
-)
+ERROR_DISTRIBUTION_PATH = FIGURE_DIR / "transformer_correct_vs_incorrect_by_class.png"
 
 
 def load_model(
@@ -87,9 +67,7 @@ def load_model(
     """Load the frozen tuned Transformer."""
 
     if not CHECKPOINT_PATH.exists():
-        raise FileNotFoundError(
-            f"Transformer checkpoint not found: {CHECKPOINT_PATH}"
-        )
+        raise FileNotFoundError(f"Transformer checkpoint not found: {CHECKPOINT_PATH}")
 
     checkpoint = torch.load(
         CHECKPOINT_PATH,
@@ -97,41 +75,19 @@ def load_model(
     )
 
     model = FinancialStressTransformer(
-        feature_count=checkpoint[
-            "feature_count"
-        ],
-        model_dimension=checkpoint[
-            "model_dimension"
-        ],
-        num_heads=checkpoint[
-            "num_heads"
-        ],
-        feed_forward_size=checkpoint[
-            "feed_forward_size"
-        ],
-        num_layers=checkpoint[
-            "num_layers"
-        ],
-        classifier_hidden_size=checkpoint[
-            "classifier_hidden_size"
-        ],
-        class_count=checkpoint[
-            "class_count"
-        ],
-        dropout=checkpoint[
-            "dropout"
-        ],
+        feature_count=checkpoint["feature_count"],
+        model_dimension=checkpoint["model_dimension"],
+        num_heads=checkpoint["num_heads"],
+        feed_forward_size=checkpoint["feed_forward_size"],
+        num_layers=checkpoint["num_layers"],
+        classifier_hidden_size=checkpoint["classifier_hidden_size"],
+        class_count=checkpoint["class_count"],
+        dropout=checkpoint["dropout"],
     )
 
-    model.load_state_dict(
-        checkpoint[
-            "model_state_dict"
-        ]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
-    model.to(
-        device
-    )
+    model.to(device)
 
     model.eval()
 
@@ -158,44 +114,22 @@ def collect_predictions(
 
     with torch.no_grad():
         for features, batch_targets in test_loader:
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
             probabilities = torch.softmax(
                 logits,
                 dim=1,
             )
 
-            batch_confidence, batch_predictions = (
-                probabilities.max(
-                    dim=1
-                )
-            )
+            batch_confidence, batch_predictions = probabilities.max(dim=1)
 
-            targets.extend(
-                batch_targets
-                .numpy()
-                .tolist()
-            )
+            targets.extend(batch_targets.numpy().tolist())
 
-            predictions.extend(
-                batch_predictions
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            predictions.extend(batch_predictions.cpu().numpy().tolist())
 
-            confidences.extend(
-                batch_confidence
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            confidences.extend(batch_confidence.cpu().numpy().tolist())
 
     return (
         np.asarray(
@@ -231,53 +165,23 @@ def select_representative_examples(
 
     increase_class = 2
 
-    correct_mask = (
-        (targets == increase_class)
-        & (predictions == increase_class)
-    )
+    correct_mask = (targets == increase_class) & (predictions == increase_class)
 
-    incorrect_mask = (
-        (targets == increase_class)
-        & (predictions != increase_class)
-    )
+    incorrect_mask = (targets == increase_class) & (predictions != increase_class)
 
-    correct_indices = np.flatnonzero(
-        correct_mask
-    )
+    correct_indices = np.flatnonzero(correct_mask)
 
-    incorrect_indices = np.flatnonzero(
-        incorrect_mask
-    )
+    incorrect_indices = np.flatnonzero(incorrect_mask)
 
     if len(correct_indices) == 0:
-        raise RuntimeError(
-            "No correctly predicted Stress Increase sample exists."
-        )
+        raise RuntimeError("No correctly predicted Stress Increase sample exists.")
 
     if len(incorrect_indices) == 0:
-        raise RuntimeError(
-            "No misclassified Stress Increase sample exists."
-        )
+        raise RuntimeError("No misclassified Stress Increase sample exists.")
 
-    correct_index = int(
-        correct_indices[
-            np.argmax(
-                confidences[
-                    correct_indices
-                ]
-            )
-        ]
-    )
+    correct_index = int(correct_indices[np.argmax(confidences[correct_indices])])
 
-    incorrect_index = int(
-        incorrect_indices[
-            np.argmax(
-                confidences[
-                    incorrect_indices
-                ]
-            )
-        ]
-    )
+    incorrect_index = int(incorrect_indices[np.argmax(confidences[incorrect_indices])])
 
     return (
         correct_index,
@@ -303,21 +207,17 @@ def extract_attention(
     - mean attention received by each historical timestep
     """
 
-    tensor = torch.tensor(
-        sample,
-        dtype=torch.float32,
-    ).unsqueeze(
-        0
-    ).to(
-        device
+    tensor = (
+        torch.tensor(
+            sample,
+            dtype=torch.float32,
+        )
+        .unsqueeze(0)
+        .to(device)
     )
 
     with torch.no_grad():
-        logits, attention_maps = (
-            model.forward_with_attention(
-                tensor
-            )
-        )
+        logits, attention_maps = model.forward_with_attention(tensor)
 
         probabilities = torch.softmax(
             logits,
@@ -325,45 +225,24 @@ def extract_attention(
         )
 
     if not attention_maps:
-        raise RuntimeError(
-            "Transformer returned no attention maps."
-        )
+        raise RuntimeError("Transformer returned no attention maps.")
 
-    final_attention = (
-        attention_maps[-1]
-        .detach()
-        .cpu()
-        .squeeze(0)
-    )
+    final_attention = attention_maps[-1].detach().cpu().squeeze(0)
 
     if final_attention.ndim != 3:
-        raise RuntimeError(
-            "Unexpected attention map shape."
-        )
+        raise RuntimeError("Unexpected attention map shape.")
 
-    mean_attention_matrix = (
-        final_attention
-        .mean(
-            dim=0
-        )
-        .numpy()
-    )
+    mean_attention_matrix = final_attention.mean(dim=0).numpy()
 
-    attention_received = (
-        final_attention
-        .mean(
-            dim=(
-                0,
-                1,
-            )
+    attention_received = final_attention.mean(
+        dim=(
+            0,
+            1,
         )
-        .numpy()
-    )
+    ).numpy()
 
     return (
-        probabilities
-        .cpu()
-        .numpy()[0],
+        probabilities.cpu().numpy()[0],
         mean_attention_matrix,
         attention_received,
     )
@@ -384,33 +263,15 @@ def top_attention_days(
 ) -> list[dict]:
     """Return the historical positions receiving most attention."""
 
-    relative_days = (
-        relative_day_labels()
-    )
+    relative_days = relative_day_labels()
 
-    indices = np.argsort(
-        attention_received
-    )[
-        ::-1
-    ][
-        :count
-    ]
+    indices = np.argsort(attention_received)[::-1][:count]
 
     return [
         {
-            "window_position": int(
-                index
-            ),
-            "relative_trading_day": int(
-                relative_days[
-                    index
-                ]
-            ),
-            "mean_attention": float(
-                attention_received[
-                    index
-                ]
-            ),
+            "window_position": int(index),
+            "relative_trading_day": int(relative_days[index]),
+            "mean_attention": float(attention_received[index]),
         }
         for index in indices
     ]
@@ -433,9 +294,7 @@ def save_attention_figure(
         exist_ok=True,
     )
 
-    relative_days = (
-        relative_day_labels()
-    )
+    relative_days = relative_day_labels()
 
     figure, axes = plt.subplots(
         2,
@@ -450,13 +309,9 @@ def save_attention_figure(
         ],
     )
 
-    heatmap_axis = axes[
-        0
-    ]
+    heatmap_axis = axes[0]
 
-    line_axis = axes[
-        1
-    ]
+    line_axis = axes[1]
 
     image = heatmap_axis.imshow(
         matrix,
@@ -481,47 +336,26 @@ def save_attention_figure(
         59,
     ]
 
-    tick_labels = [
-        str(
-            relative_days[
-                position
-            ]
-        )
-        for position in tick_positions
-    ]
+    tick_labels = [str(relative_days[position]) for position in tick_positions]
 
-    heatmap_axis.set_xticks(
-        tick_positions
-    )
+    heatmap_axis.set_xticks(tick_positions)
 
-    heatmap_axis.set_xticklabels(
-        tick_labels
-    )
+    heatmap_axis.set_xticklabels(tick_labels)
 
-    heatmap_axis.set_yticks(
-        tick_positions
-    )
+    heatmap_axis.set_yticks(tick_positions)
 
-    heatmap_axis.set_yticklabels(
-        tick_labels
-    )
+    heatmap_axis.set_yticklabels(tick_labels)
 
-    heatmap_axis.set_xlabel(
-        "Key Position: Relative Trading Day"
-    )
+    heatmap_axis.set_xlabel("Key Position: Relative Trading Day")
 
-    heatmap_axis.set_ylabel(
-        "Query Position: Relative Trading Day"
-    )
+    heatmap_axis.set_ylabel("Query Position: Relative Trading Day")
 
     heatmap_axis.set_title(
-        (
-            f"{example_name} Transformer Prediction\n"
-            f"True: {CLASS_NAMES[actual_class]} | "
-            f"Predicted: {CLASS_NAMES[predicted_class]} | "
-            f"Confidence: {confidence * 100:.1f}% | "
-            f"Test Index: {sample_index}"
-        )
+        f"{example_name} Transformer Prediction\n"
+        f"True: {CLASS_NAMES[actual_class]} | "
+        f"Predicted: {CLASS_NAMES[predicted_class]} | "
+        f"Confidence: {confidence * 100:.1f}% | "
+        f"Test Index: {sample_index}"
     )
 
     line_axis.plot(
@@ -529,21 +363,13 @@ def save_attention_figure(
         attention_received,
     )
 
-    line_axis.set_xlabel(
-        "Relative Trading Day"
-    )
+    line_axis.set_xlabel("Relative Trading Day")
 
-    line_axis.set_ylabel(
-        "Mean Attention"
-    )
+    line_axis.set_ylabel("Mean Attention")
 
-    line_axis.set_title(
-        "Mean Attention Received Across Heads and Query Positions"
-    )
+    line_axis.set_title("Mean Attention Received Across Heads and Query Positions")
 
-    line_axis.grid(
-        alpha=0.25
-    )
+    line_axis.grid(alpha=0.25)
 
     figure.tight_layout()
 
@@ -553,9 +379,7 @@ def save_attention_figure(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
     print(
         "Saved:",
@@ -580,59 +404,27 @@ def save_error_distribution(
 
     class_results = {}
 
-    for class_id, class_name in enumerate(
-        CLASS_NAMES
-    ):
-        class_mask = (
-            targets == class_id
-        )
+    for class_id, class_name in enumerate(CLASS_NAMES):
+        class_mask = targets == class_id
 
-        correct_count = int(
-            np.sum(
-                class_mask
-                & (
-                    predictions
-                    == class_id
-                )
-            )
-        )
+        correct_count = int(np.sum(class_mask & (predictions == class_id)))
 
-        total_count = int(
-            np.sum(
-                class_mask
-            )
-        )
+        total_count = int(np.sum(class_mask))
 
-        incorrect_count = (
-            total_count
-            - correct_count
-        )
+        incorrect_count = total_count - correct_count
 
-        correct_counts.append(
-            correct_count
-        )
+        correct_counts.append(correct_count)
 
-        incorrect_counts.append(
-            incorrect_count
-        )
+        incorrect_counts.append(incorrect_count)
 
-        class_results[
-            class_name
-        ] = {
+        class_results[class_name] = {
             "total": total_count,
             "correct": correct_count,
             "incorrect": incorrect_count,
-            "correct_rate": (
-                correct_count
-                / total_count
-            ),
+            "correct_rate": (correct_count / total_count),
         }
 
-    positions = np.arange(
-        len(
-            CLASS_NAMES
-        )
-    )
+    positions = np.arange(len(CLASS_NAMES))
 
     width = 0.36
 
@@ -644,42 +436,28 @@ def save_error_distribution(
     )
 
     correct_bars = axis.bar(
-        positions
-        - width
-        / 2,
+        positions - width / 2,
         correct_counts,
         width=width,
         label="Correct",
     )
 
     incorrect_bars = axis.bar(
-        positions
-        + width
-        / 2,
+        positions + width / 2,
         incorrect_counts,
         width=width,
         label="Incorrect",
     )
 
-    axis.set_title(
-        "Transformer Correct and Incorrect Predictions by True Class"
-    )
+    axis.set_title("Transformer Correct and Incorrect Predictions by True Class")
 
-    axis.set_xlabel(
-        "True Stress Class"
-    )
+    axis.set_xlabel("True Stress Class")
 
-    axis.set_ylabel(
-        "Number of Test Samples"
-    )
+    axis.set_ylabel("Number of Test Samples")
 
-    axis.set_xticks(
-        positions
-    )
+    axis.set_xticks(positions)
 
-    axis.set_xticklabels(
-        CLASS_NAMES
-    )
+    axis.set_xticklabels(CLASS_NAMES)
 
     axis.legend()
 
@@ -693,19 +471,12 @@ def save_error_distribution(
         incorrect_bars,
     ):
         for bar in bars:
-            value = int(
-                bar.get_height()
-            )
+            value = int(bar.get_height())
 
             axis.text(
-                bar.get_x()
-                + bar.get_width()
-                / 2,
-                value
-                + 5,
-                str(
-                    value
-                ),
+                bar.get_x() + bar.get_width() / 2,
+                value + 5,
+                str(value),
                 ha="center",
                 va="bottom",
                 fontsize=9,
@@ -719,9 +490,7 @@ def save_error_distribution(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
     print(
         "Saved:",
@@ -749,30 +518,15 @@ def confusion_summary(
 
     errors = []
 
-    for actual_class in range(
-        len(
-            CLASS_NAMES
-        )
-    ):
-        for predicted_class in range(
-            len(
-                CLASS_NAMES
-            )
-        ):
-            if (
-                actual_class
-                == predicted_class
-            ):
+    for actual_class in range(len(CLASS_NAMES)):
+        for predicted_class in range(len(CLASS_NAMES)):
+            if actual_class == predicted_class:
                 continue
 
             errors.append(
                 {
-                    "actual_class": CLASS_NAMES[
-                        actual_class
-                    ],
-                    "predicted_class": CLASS_NAMES[
-                        predicted_class
-                    ],
+                    "actual_class": CLASS_NAMES[actual_class],
+                    "predicted_class": CLASS_NAMES[predicted_class],
                     "count": int(
                         matrix[
                             actual_class,
@@ -783,9 +537,7 @@ def confusion_summary(
             )
 
     errors.sort(
-        key=lambda item: item[
-            "count"
-        ],
+        key=lambda item: item["count"],
         reverse=True,
     )
 
@@ -817,20 +569,10 @@ def save_explainability_log(
     )
 
     payload = {
-        "model": (
-            "FinancialStressTransformer"
-        ),
-        "selected_run": checkpoint.get(
-            "selected_run"
-        ),
-        "analysis_split": (
-            "held_out_test_set"
-        ),
-        "test_samples": int(
-            len(
-                targets
-            )
-        ),
+        "model": ("FinancialStressTransformer"),
+        "selected_run": checkpoint.get("selected_run"),
+        "analysis_split": ("held_out_test_set"),
+        "test_samples": int(len(targets)),
         "interpretation_note": (
             "Attention weights are used as an interpretability aid. "
             "They do not establish causality and must not be treated "
@@ -838,91 +580,29 @@ def save_explainability_log(
         ),
         "correct_stress_increase_example": {
             "test_index": correct_index,
-            "actual_class_id": int(
-                targets[
-                    correct_index
-                ]
-            ),
-            "actual_class": CLASS_NAMES[
-                targets[
-                    correct_index
-                ]
-            ],
-            "predicted_class_id": int(
-                predictions[
-                    correct_index
-                ]
-            ),
-            "predicted_class": CLASS_NAMES[
-                predictions[
-                    correct_index
-                ]
-            ],
-            "prediction_confidence": float(
-                confidences[
-                    correct_index
-                ]
-            ),
+            "actual_class_id": int(targets[correct_index]),
+            "actual_class": CLASS_NAMES[targets[correct_index]],
+            "predicted_class_id": int(predictions[correct_index]),
+            "predicted_class": CLASS_NAMES[predictions[correct_index]],
+            "prediction_confidence": float(confidences[correct_index]),
             "class_probabilities": {
-                class_name: float(
-                    correct_probabilities[
-                        class_id
-                    ]
-                )
-                for class_id, class_name
-                in enumerate(
-                    CLASS_NAMES
-                )
+                class_name: float(correct_probabilities[class_id])
+                for class_id, class_name in enumerate(CLASS_NAMES)
             },
-            "top_attention_days": (
-                top_attention_days(
-                    correct_attention
-                )
-            ),
+            "top_attention_days": (top_attention_days(correct_attention)),
         },
         "misclassified_stress_increase_example": {
             "test_index": incorrect_index,
-            "actual_class_id": int(
-                targets[
-                    incorrect_index
-                ]
-            ),
-            "actual_class": CLASS_NAMES[
-                targets[
-                    incorrect_index
-                ]
-            ],
-            "predicted_class_id": int(
-                predictions[
-                    incorrect_index
-                ]
-            ),
-            "predicted_class": CLASS_NAMES[
-                predictions[
-                    incorrect_index
-                ]
-            ],
-            "prediction_confidence": float(
-                confidences[
-                    incorrect_index
-                ]
-            ),
+            "actual_class_id": int(targets[incorrect_index]),
+            "actual_class": CLASS_NAMES[targets[incorrect_index]],
+            "predicted_class_id": int(predictions[incorrect_index]),
+            "predicted_class": CLASS_NAMES[predictions[incorrect_index]],
+            "prediction_confidence": float(confidences[incorrect_index]),
             "class_probabilities": {
-                class_name: float(
-                    incorrect_probabilities[
-                        class_id
-                    ]
-                )
-                for class_id, class_name
-                in enumerate(
-                    CLASS_NAMES
-                )
+                class_name: float(incorrect_probabilities[class_id])
+                for class_id, class_name in enumerate(CLASS_NAMES)
             },
-            "top_attention_days": (
-                top_attention_days(
-                    incorrect_attention
-                )
-            ),
+            "top_attention_days": (top_attention_days(incorrect_attention)),
         },
         "class_results": class_results,
         "confusion_analysis": confusion_results,
@@ -954,9 +634,7 @@ def print_example(
     """Print one representative prediction example."""
 
     print()
-    print(
-        title
-    )
+    print(title)
 
     print(
         "Test index:",
@@ -965,51 +643,30 @@ def print_example(
 
     print(
         "True class:",
-        CLASS_NAMES[
-            targets[
-                index
-            ]
-        ],
+        CLASS_NAMES[targets[index]],
     )
 
     print(
         "Predicted class:",
-        CLASS_NAMES[
-            predictions[
-                index
-            ]
-        ],
+        CLASS_NAMES[predictions[index]],
     )
 
     print(
         "Confidence:",
         round(
-            confidences[
-                index
-            ],
+            confidences[index],
             4,
         ),
     )
 
-    print(
-        "Class probabilities:"
-    )
+    print("Class probabilities:")
 
-    for class_id, class_name in enumerate(
-        CLASS_NAMES
-    ):
-        print(
-            f"  {class_name}: "
-            f"{probabilities[class_id]:.4f}"
-        )
+    for class_id, class_name in enumerate(CLASS_NAMES):
+        print(f"  {class_name}: {probabilities[class_id]:.4f}")
 
-    print(
-        "Top attention positions:"
-    )
+    print("Top attention positions:")
 
-    for item in top_attention_days(
-        attention_received
-    ):
+    for item in top_attention_days(attention_received):
         print(
             "  Relative trading day "
             f"{item['relative_trading_day']:>3}: "
@@ -1022,18 +679,14 @@ def main() -> None:
 
     prepared_data = prepare_ofr_data()
 
-    _, _, test_loader = (
-        create_data_loaders(
-            prepared_data,
-            batch_size=64,
-        )
+    _, _, test_loader = create_data_loaders(
+        prepared_data,
+        batch_size=64,
     )
 
     device = select_device()
 
-    model, checkpoint = load_model(
-        device
-    )
+    model, checkpoint = load_model(device)
 
     (
         targets,
@@ -1060,9 +713,7 @@ def main() -> None:
         correct_attention,
     ) = extract_attention(
         model=model,
-        sample=prepared_data.X_test[
-            correct_index
-        ],
+        sample=prepared_data.X_test[correct_index],
         device=device,
     )
 
@@ -1072,16 +723,12 @@ def main() -> None:
         incorrect_attention,
     ) = extract_attention(
         model=model,
-        sample=prepared_data.X_test[
-            incorrect_index
-        ],
+        sample=prepared_data.X_test[incorrect_index],
         device=device,
     )
 
     print()
-    print(
-        "=== TRANSFORMER EXPLAINABILITY ANALYSIS ==="
-    )
+    print("=== TRANSFORMER EXPLAINABILITY ANALYSIS ===")
 
     print(
         "Device:",
@@ -1090,27 +737,18 @@ def main() -> None:
 
     print(
         "Selected run:",
-        checkpoint.get(
-            "selected_run"
-        ),
+        checkpoint.get("selected_run"),
     )
 
     print(
         "Test samples:",
-        len(
-            targets
-        ),
+        len(targets),
     )
 
-    print(
-        "Attention interpretation:"
-        " descriptive, not causal"
-    )
+    print("Attention interpretation: descriptive, not causal")
 
     print_example(
-        title=(
-            "=== CORRECT STRESS INCREASE EXAMPLE ==="
-        ),
+        title=("=== CORRECT STRESS INCREASE EXAMPLE ==="),
         index=correct_index,
         targets=targets,
         predictions=predictions,
@@ -1120,9 +758,7 @@ def main() -> None:
     )
 
     print_example(
-        title=(
-            "=== MISCLASSIFIED STRESS INCREASE EXAMPLE ==="
-        ),
+        title=("=== MISCLASSIFIED STRESS INCREASE EXAMPLE ==="),
         index=incorrect_index,
         targets=targets,
         predictions=predictions,
@@ -1134,65 +770,33 @@ def main() -> None:
     save_attention_figure(
         matrix=correct_matrix,
         attention_received=correct_attention,
-        actual_class=int(
-            targets[
-                correct_index
-            ]
-        ),
-        predicted_class=int(
-            predictions[
-                correct_index
-            ]
-        ),
-        confidence=float(
-            confidences[
-                correct_index
-            ]
-        ),
+        actual_class=int(targets[correct_index]),
+        predicted_class=int(predictions[correct_index]),
+        confidence=float(confidences[correct_index]),
         sample_index=correct_index,
         path=CORRECT_ATTENTION_PATH,
-        example_name=(
-            "Correct Stress Increase"
-        ),
+        example_name=("Correct Stress Increase"),
     )
 
     save_attention_figure(
         matrix=incorrect_matrix,
         attention_received=incorrect_attention,
-        actual_class=int(
-            targets[
-                incorrect_index
-            ]
-        ),
-        predicted_class=int(
-            predictions[
-                incorrect_index
-            ]
-        ),
-        confidence=float(
-            confidences[
-                incorrect_index
-            ]
-        ),
+        actual_class=int(targets[incorrect_index]),
+        predicted_class=int(predictions[incorrect_index]),
+        confidence=float(confidences[incorrect_index]),
         sample_index=incorrect_index,
         path=INCORRECT_ATTENTION_PATH,
-        example_name=(
-            "Misclassified Stress Increase"
-        ),
+        example_name=("Misclassified Stress Increase"),
     )
 
-    class_results = (
-        save_error_distribution(
-            targets=targets,
-            predictions=predictions,
-        )
+    class_results = save_error_distribution(
+        targets=targets,
+        predictions=predictions,
     )
 
-    confusion_results = (
-        confusion_summary(
-            targets=targets,
-            predictions=predictions,
-        )
+    confusion_results = confusion_summary(
+        targets=targets,
+        predictions=predictions,
     )
 
     save_explainability_log(
@@ -1211,13 +815,9 @@ def main() -> None:
     )
 
     print()
-    print(
-        "=== CLASS-WISE CORRECT RATES ==="
-    )
+    print("=== CLASS-WISE CORRECT RATES ===")
 
-    for class_name, result in (
-        class_results.items()
-    ):
+    for class_name, result in class_results.items():
         print(
             f"{class_name}: "
             f"{result['correct']} / "
@@ -1226,25 +826,15 @@ def main() -> None:
         )
 
     print()
-    print(
-        "=== MOST COMMON MISCLASSIFICATIONS ==="
-    )
+    print("=== MOST COMMON MISCLASSIFICATIONS ===")
 
-    for error in (
-        confusion_results[
-            "most_common_errors"
-        ]
-    ):
+    for error in confusion_results["most_common_errors"]:
         print(
-            f"{error['actual_class']} -> "
-            f"{error['predicted_class']}: "
-            f"{error['count']}"
+            f"{error['actual_class']} -> {error['predicted_class']}: {error['count']}"
         )
 
     print()
-    print(
-        "Explainability analysis completed."
-    )
+    print("Explainability analysis completed.")
 
 
 if __name__ == "__main__":

@@ -4,6 +4,10 @@ Diese Analyse untersucht die bereits final festgelegten Modelle getrennt nach Ka
 
 Die Jahresanalyse dient ausschließlich der Beschreibung der zeitlichen Generalisierung. Sie wurde **nicht** für weitere Modellauswahl, Hyperparameter-Optimierung oder Retraining genutzt.
 
+Die maschinenlesbaren Jahreswerte liegen in
+`evidence/temporal_generalization.json`; ihr Hash ist im Evidence-Manifest
+festgehalten.
+
 Das Jahr **2026 ist ein Teiljahr**. Der eingefrorene OFR-Datensatz endet am 05.08.2026; der letzte verfügbare Vorhersagetag ist der 29.07.2026.
 
 ## Jahresergebnisse
@@ -39,6 +43,12 @@ Die jahresweise Betrachtung macht sichtbar, ob die Modelle über unterschiedlich
 Eine solche Schwankung ist bei Finanzzeitreihen besonders relevant, weil sich Marktregime, Volatilität und strukturelle Zusammenhänge über die Zeit verändern können.
 
 Die Jahresmetriken werden deshalb als Ergänzung zur Gesamt-Testauswertung verstanden und nicht als Grundlage für nachträgliche Modelloptimierung.
+
+Die 60-Tage-Fenster überlappen und die Jahresabschnitte stammen aus nur einem
+historischen Pfad. Die Zeilen sind daher keine unabhängigen Wiederholungen. Es
+werden bewusst keine herkömmlichen, auf Unabhängigkeit beruhenden
+Konfidenzintervalle behauptet. Für belastbarere Aussagen wäre eine vorab
+definierte Walk-Forward-Auswertung erforderlich.
 
 ## Abbildungen
 

@@ -25,9 +25,7 @@ def test_positional_encoding_preserves_shape():
         dtype=torch.float32,
     )
 
-    outputs = encoding(
-        inputs
-    )
+    outputs = encoding(inputs)
 
     assert outputs.shape == (
         8,
@@ -51,13 +49,9 @@ def test_positional_encoding_changes_zero_input():
         dtype=torch.float32,
     )
 
-    outputs = encoding(
-        inputs
-    )
+    outputs = encoding(inputs)
 
-    assert not torch.all(
-        outputs == 0
-    )
+    assert not torch.all(outputs == 0)
 
     assert not torch.equal(
         outputs[:, 0, :],
@@ -84,9 +78,7 @@ def test_positional_encoding_rejects_long_sequence():
         ValueError,
         match="longer",
     ):
-        encoding(
-            inputs
-        )
+        encoding(inputs)
 
 
 def test_encoder_block_preserves_shape():
@@ -170,9 +162,7 @@ def test_transformer_returns_correct_output_shape():
         dtype=torch.float32,
     )
 
-    outputs = model(
-        inputs
-    )
+    outputs = model(inputs)
 
     assert outputs.shape == (
         16,
@@ -197,9 +187,7 @@ def test_transformer_supports_different_batch_sizes():
             dtype=torch.float32,
         )
 
-        outputs = model(
-            inputs
-        )
+        outputs = model(inputs)
 
         assert outputs.shape == (
             batch_size,
@@ -224,9 +212,7 @@ def test_transformer_supports_different_sequence_lengths():
             dtype=torch.float32,
         )
 
-        outputs = model(
-            inputs
-        )
+        outputs = model(inputs)
 
         assert outputs.shape == (
             4,
@@ -249,20 +235,14 @@ def test_transformer_returns_attention_maps():
         dtype=torch.float32,
     )
 
-    logits, attention_maps = (
-        model.forward_with_attention(
-            inputs
-        )
-    )
+    logits, attention_maps = model.forward_with_attention(inputs)
 
     assert logits.shape == (
         2,
         3,
     )
 
-    assert len(
-        attention_maps
-    ) == 2
+    assert len(attention_maps) == 2
 
     for attention_map in attention_maps:
         assert attention_map.shape == (
@@ -288,9 +268,7 @@ def test_transformer_rejects_two_dimensional_input():
         ValueError,
         match="batch_size, sequence_length, feature_count",
     ):
-        model(
-            invalid_inputs
-        )
+        model(invalid_inputs)
 
 
 def test_transformer_rejects_wrong_feature_count():
@@ -311,9 +289,7 @@ def test_transformer_rejects_wrong_feature_count():
         ValueError,
         match="feature count",
     ):
-        model(
-            invalid_inputs
-        )
+        model(invalid_inputs)
 
 
 def test_transformer_requires_compatible_attention_heads():
@@ -403,9 +379,7 @@ def test_transformer_has_expected_parameter_count():
     model = FinancialStressTransformer()
 
     parameter_count = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
 
     assert parameter_count == 69763

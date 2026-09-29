@@ -7,30 +7,15 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-LOG_DIR = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-)
+LOG_DIR = PROJECT_ROOT / "artifacts" / "logs"
 
-FIGURE_DIR = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-)
+FIGURE_DIR = PROJECT_ROOT / "reports" / "figures"
 
-TUNING_RESULTS_PATH = (
-    LOG_DIR
-    / "transformer_tuning_results_final.json"
-)
+TUNING_RESULTS_PATH = LOG_DIR / "transformer_tuning_results_final.json"
 
-TRAINING_HISTORY_PATH = (
-    LOG_DIR
-    / "transformer_tuned_training_history.json"
-)
+TRAINING_HISTORY_PATH = LOG_DIR / "transformer_tuned_training_history.json"
 
 
 def load_json(
@@ -39,13 +24,9 @@ def load_json(
     """Load a JSON file."""
 
     if not path.exists():
-        raise FileNotFoundError(
-            f"Required file not found: {path}"
-        )
+        raise FileNotFoundError(f"Required file not found: {path}")
 
-    return json.loads(
-        path.read_text()
-    )
+    return json.loads(path.read_text())
 
 
 def save_figure(
@@ -59,10 +40,7 @@ def save_figure(
         exist_ok=True,
     )
 
-    path = (
-        FIGURE_DIR
-        / filename
-    )
+    path = FIGURE_DIR / filename
 
     figure.tight_layout()
 
@@ -72,9 +50,7 @@ def save_figure(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
     print(
         "Saved:",
@@ -89,12 +65,7 @@ def plot_training_loss(
 
     epochs = range(
         1,
-        len(
-            history[
-                "train_loss"
-            ]
-        )
-        + 1,
+        len(history["train_loss"]) + 1,
     )
 
     figure, axis = plt.subplots(
@@ -106,48 +77,31 @@ def plot_training_loss(
 
     axis.plot(
         epochs,
-        history[
-            "train_loss"
-        ],
+        history["train_loss"],
         label="Training Loss",
     )
 
     axis.plot(
         epochs,
-        history[
-            "validation_loss"
-        ],
+        history["validation_loss"],
         label="Validation Loss",
     )
 
     axis.axvline(
-        history[
-            "best_epoch"
-        ],
+        history["best_epoch"],
         linestyle="--",
-        label=(
-            "Selected Epoch "
-            f"{history['best_epoch']}"
-        ),
+        label=(f"Selected Epoch {history['best_epoch']}"),
     )
 
-    axis.set_title(
-        "Transformer Training and Validation Loss"
-    )
+    axis.set_title("Transformer Training and Validation Loss")
 
-    axis.set_xlabel(
-        "Epoch"
-    )
+    axis.set_xlabel("Epoch")
 
-    axis.set_ylabel(
-        "Cross-Entropy Loss"
-    )
+    axis.set_ylabel("Cross-Entropy Loss")
 
     axis.legend()
 
-    axis.grid(
-        alpha=0.25
-    )
+    axis.grid(alpha=0.25)
 
     save_figure(
         figure,
@@ -162,27 +116,12 @@ def plot_training_accuracy(
 
     epochs = range(
         1,
-        len(
-            history[
-                "train_accuracy"
-            ]
-        )
-        + 1,
+        len(history["train_accuracy"]) + 1,
     )
 
-    train_accuracy = [
-        value * 100
-        for value in history[
-            "train_accuracy"
-        ]
-    ]
+    train_accuracy = [value * 100 for value in history["train_accuracy"]]
 
-    validation_accuracy = [
-        value * 100
-        for value in history[
-            "validation_accuracy"
-        ]
-    ]
+    validation_accuracy = [value * 100 for value in history["validation_accuracy"]]
 
     figure, axis = plt.subplots(
         figsize=(
@@ -204,33 +143,20 @@ def plot_training_accuracy(
     )
 
     axis.axvline(
-        history[
-            "best_epoch"
-        ],
+        history["best_epoch"],
         linestyle="--",
-        label=(
-            "Selected Epoch "
-            f"{history['best_epoch']}"
-        ),
+        label=(f"Selected Epoch {history['best_epoch']}"),
     )
 
-    axis.set_title(
-        "Transformer Training and Validation Accuracy"
-    )
+    axis.set_title("Transformer Training and Validation Accuracy")
 
-    axis.set_xlabel(
-        "Epoch"
-    )
+    axis.set_xlabel("Epoch")
 
-    axis.set_ylabel(
-        "Accuracy (%)"
-    )
+    axis.set_ylabel("Accuracy (%)")
 
     axis.legend()
 
-    axis.grid(
-        alpha=0.25
-    )
+    axis.grid(alpha=0.25)
 
     save_figure(
         figure,
@@ -247,20 +173,9 @@ def plot_tuning_metric(
 ) -> None:
     """Create one tuning comparison bar chart."""
 
-    run_ids = [
-        result[
-            "run_id"
-        ]
-        for result in results
-    ]
+    run_ids = [result["run_id"] for result in results]
 
-    values = [
-        result[
-            metric_key
-        ]
-        * 100
-        for result in results
-    ]
+    values = [result[metric_key] * 100 for result in results]
 
     figure, axis = plt.subplots(
         figsize=(
@@ -274,17 +189,11 @@ def plot_tuning_metric(
         values,
     )
 
-    axis.set_title(
-        title
-    )
+    axis.set_title(title)
 
-    axis.set_xlabel(
-        "Transformer Tuning Run"
-    )
+    axis.set_xlabel("Transformer Tuning Run")
 
-    axis.set_ylabel(
-        ylabel
-    )
+    axis.set_ylabel(ylabel)
 
     axis.grid(
         axis="y",
@@ -297,9 +206,7 @@ def plot_tuning_metric(
         strict=True,
     ):
         axis.text(
-            bar.get_x()
-            + bar.get_width()
-            / 2,
+            bar.get_x() + bar.get_width() / 2,
             bar.get_height(),
             f"{value:.1f}",
             ha="center",
@@ -318,19 +225,9 @@ def plot_validation_loss(
 ) -> None:
     """Compare best validation loss across tuning runs."""
 
-    run_ids = [
-        result[
-            "run_id"
-        ]
-        for result in results
-    ]
+    run_ids = [result["run_id"] for result in results]
 
-    values = [
-        result[
-            "validation_loss"
-        ]
-        for result in results
-    ]
+    values = [result["validation_loss"] for result in results]
 
     figure, axis = plt.subplots(
         figsize=(
@@ -344,17 +241,11 @@ def plot_validation_loss(
         values,
     )
 
-    axis.set_title(
-        "Transformer Hyperparameter Tuning: Validation Loss"
-    )
+    axis.set_title("Transformer Hyperparameter Tuning: Validation Loss")
 
-    axis.set_xlabel(
-        "Transformer Tuning Run"
-    )
+    axis.set_xlabel("Transformer Tuning Run")
 
-    axis.set_ylabel(
-        "Validation Loss"
-    )
+    axis.set_ylabel("Validation Loss")
 
     axis.grid(
         axis="y",
@@ -367,9 +258,7 @@ def plot_validation_loss(
         strict=True,
     ):
         axis.text(
-            bar.get_x()
-            + bar.get_width()
-            / 2,
+            bar.get_x() + bar.get_width() / 2,
             bar.get_height(),
             f"{value:.3f}",
             ha="center",
@@ -391,30 +280,19 @@ def print_tuning_summary(
     ranked_results = sorted(
         results,
         key=lambda result: (
-            -result[
-                "validation_macro_f1"
-            ],
-            result[
-                "validation_loss"
-            ],
+            -result["validation_macro_f1"],
+            result["validation_loss"],
         ),
     )
 
     print()
-    print(
-        "=== TRANSFORMER TUNING SUMMARY ==="
-    )
+    print("=== TRANSFORMER TUNING SUMMARY ===")
 
     print()
 
-    print(
-        "Run | Macro-F1 | Accuracy | "
-        "Increase Recall | Val Loss"
-    )
+    print("Run | Macro-F1 | Accuracy | Increase Recall | Val Loss")
 
-    print(
-        "-" * 60
-    )
+    print("-" * 60)
 
     for result in ranked_results:
         print(
@@ -429,94 +307,59 @@ def print_tuning_summary(
 def main() -> None:
     """Generate all Transformer training and tuning plots."""
 
-    tuning_results = load_json(
-        TUNING_RESULTS_PATH
-    )
+    tuning_results = load_json(TUNING_RESULTS_PATH)
 
-    training_history = load_json(
-        TRAINING_HISTORY_PATH
-    )
+    training_history = load_json(TRAINING_HISTORY_PATH)
 
     print()
-    print(
-        "=== TRANSFORMER PLOT GENERATION ==="
-    )
+    print("=== TRANSFORMER PLOT GENERATION ===")
 
     print(
         "Tuning runs:",
-        len(
-            tuning_results
-        ),
+        len(tuning_results),
     )
 
     print(
         "Selected best epoch:",
-        training_history[
-            "best_epoch"
-        ],
+        training_history["best_epoch"],
     )
 
     print()
 
-    plot_training_loss(
-        training_history
-    )
+    plot_training_loss(training_history)
 
-    plot_training_accuracy(
-        training_history
-    )
+    plot_training_accuracy(training_history)
 
     plot_tuning_metric(
         results=tuning_results,
         metric_key="validation_macro_f1",
         ylabel="Validation Macro-F1 (%)",
-        title=(
-            "Transformer Hyperparameter Tuning: "
-            "Validation Macro-F1"
-        ),
-        filename=(
-            "transformer_tuning_macro_f1.png"
-        ),
+        title=("Transformer Hyperparameter Tuning: Validation Macro-F1"),
+        filename=("transformer_tuning_macro_f1.png"),
     )
 
     plot_tuning_metric(
         results=tuning_results,
         metric_key="validation_accuracy",
         ylabel="Validation Accuracy (%)",
-        title=(
-            "Transformer Hyperparameter Tuning: "
-            "Validation Accuracy"
-        ),
-        filename=(
-            "transformer_tuning_accuracy.png"
-        ),
+        title=("Transformer Hyperparameter Tuning: Validation Accuracy"),
+        filename=("transformer_tuning_accuracy.png"),
     )
 
     plot_tuning_metric(
         results=tuning_results,
         metric_key="recall_stress_increase",
         ylabel="Stress Increase Recall (%)",
-        title=(
-            "Transformer Hyperparameter Tuning: "
-            "Stress Increase Recall"
-        ),
-        filename=(
-            "transformer_tuning_increase_recall.png"
-        ),
+        title=("Transformer Hyperparameter Tuning: Stress Increase Recall"),
+        filename=("transformer_tuning_increase_recall.png"),
     )
 
-    plot_validation_loss(
-        tuning_results
-    )
+    plot_validation_loss(tuning_results)
 
-    print_tuning_summary(
-        tuning_results
-    )
+    print_tuning_summary(tuning_results)
 
     print()
-    print(
-        "Transformer plots completed."
-    )
+    print("Transformer plots completed.")
 
 
 if __name__ == "__main__":

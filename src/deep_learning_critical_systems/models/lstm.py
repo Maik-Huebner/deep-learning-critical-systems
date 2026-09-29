@@ -5,7 +5,6 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-
 DEFAULT_FEATURE_COUNT = 9
 DEFAULT_HIDDEN_SIZE = 64
 DEFAULT_CLASSIFIER_HIDDEN_SIZE = 32
@@ -41,29 +40,19 @@ class FinancialStressLSTM(nn.Module):
         super().__init__()
 
         if feature_count <= 0:
-            raise ValueError(
-                "Feature count must be greater than zero."
-            )
+            raise ValueError("Feature count must be greater than zero.")
 
         if hidden_size <= 0:
-            raise ValueError(
-                "Hidden size must be greater than zero."
-            )
+            raise ValueError("Hidden size must be greater than zero.")
 
         if classifier_hidden_size <= 0:
-            raise ValueError(
-                "Classifier hidden size must be greater than zero."
-            )
+            raise ValueError("Classifier hidden size must be greater than zero.")
 
         if class_count <= 1:
-            raise ValueError(
-                "Class count must be greater than one."
-            )
+            raise ValueError("Class count must be greater than one.")
 
         if not 0.0 <= dropout < 1.0:
-            raise ValueError(
-                "Dropout must be between 0.0 and 1.0."
-            )
+            raise ValueError("Dropout must be between 0.0 and 1.0.")
 
         self.feature_count = feature_count
         self.hidden_size = hidden_size
@@ -80,9 +69,7 @@ class FinancialStressLSTM(nn.Module):
                 classifier_hidden_size,
             ),
             nn.ReLU(),
-            nn.Dropout(
-                dropout
-            ),
+            nn.Dropout(dropout),
             nn.Linear(
                 classifier_hidden_size,
                 class_count,
@@ -103,13 +90,10 @@ class FinancialStressLSTM(nn.Module):
 
         if inputs.shape[2] != self.feature_count:
             raise ValueError(
-                "Input feature count does not match "
-                "the configured model feature count."
+                "Input feature count does not match the configured model feature count."
             )
 
-        sequence_output, _ = self.lstm(
-            inputs
-        )
+        sequence_output, _ = self.lstm(inputs)
 
         final_output = sequence_output[
             :,
@@ -117,8 +101,6 @@ class FinancialStressLSTM(nn.Module):
             :,
         ]
 
-        logits = self.classifier(
-            final_output
-        )
+        logits = self.classifier(final_output)
 
         return logits

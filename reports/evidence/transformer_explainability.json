@@ -1,0 +1,158 @@
+{
+  "model": "FinancialStressTransformer",
+  "selected_run": "T1",
+  "analysis_split": "held_out_test_set",
+  "test_samples": 1694,
+  "interpretation_note": "Attention weights are used as an interpretability aid. They do not establish causality and must not be treated as direct feature importance.",
+  "correct_stress_increase_example": {
+    "test_index": 34,
+    "actual_class_id": 2,
+    "actual_class": "Stress Increase",
+    "predicted_class_id": 2,
+    "predicted_class": "Stress Increase",
+    "prediction_confidence": 0.3682715892791748,
+    "class_probabilities": {
+      "Stress Decrease": 0.2777364253997803,
+      "Stable": 0.3539919853210449,
+      "Stress Increase": 0.3682715892791748
+    },
+    "top_attention_days": [
+      {
+        "window_position": 45,
+        "relative_trading_day": -14,
+        "mean_attention": 0.023800117895007133
+      },
+      {
+        "window_position": 46,
+        "relative_trading_day": -13,
+        "mean_attention": 0.02351134456694126
+      },
+      {
+        "window_position": 2,
+        "relative_trading_day": -57,
+        "mean_attention": 0.022714022547006607
+      },
+      {
+        "window_position": 44,
+        "relative_trading_day": -15,
+        "mean_attention": 0.022474145516753197
+      },
+      {
+        "window_position": 51,
+        "relative_trading_day": -8,
+        "mean_attention": 0.022272855043411255
+      }
+    ]
+  },
+  "misclassified_stress_increase_example": {
+    "test_index": 107,
+    "actual_class_id": 2,
+    "actual_class": "Stress Increase",
+    "predicted_class_id": 0,
+    "predicted_class": "Stress Decrease",
+    "prediction_confidence": 0.5834094882011414,
+    "class_probabilities": {
+      "Stress Decrease": 0.5834095478057861,
+      "Stable": 0.1384449452161789,
+      "Stress Increase": 0.2781454920768738
+    },
+    "top_attention_days": [
+      {
+        "window_position": 59,
+        "relative_trading_day": 0,
+        "mean_attention": 0.022731490433216095
+      },
+      {
+        "window_position": 33,
+        "relative_trading_day": -26,
+        "mean_attention": 0.020998844876885414
+      },
+      {
+        "window_position": 34,
+        "relative_trading_day": -25,
+        "mean_attention": 0.02092490717768669
+      },
+      {
+        "window_position": 58,
+        "relative_trading_day": -1,
+        "mean_attention": 0.020191188901662827
+      },
+      {
+        "window_position": 46,
+        "relative_trading_day": -13,
+        "mean_attention": 0.019329054281115532
+      }
+    ]
+  },
+  "class_results": {
+    "Stress Decrease": {
+      "total": 519,
+      "correct": 368,
+      "incorrect": 151,
+      "correct_rate": 0.7090558766859345
+    },
+    "Stable": {
+      "total": 638,
+      "correct": 307,
+      "incorrect": 331,
+      "correct_rate": 0.48119122257053293
+    },
+    "Stress Increase": {
+      "total": 537,
+      "correct": 44,
+      "incorrect": 493,
+      "correct_rate": 0.08193668528864059
+    }
+  },
+  "confusion_analysis": {
+    "matrix": [
+      [
+        368,
+        122,
+        29
+      ],
+      [
+        279,
+        307,
+        52
+      ],
+      [
+        256,
+        237,
+        44
+      ]
+    ],
+    "most_common_errors": [
+      {
+        "actual_class": "Stable",
+        "predicted_class": "Stress Decrease",
+        "count": 279
+      },
+      {
+        "actual_class": "Stress Increase",
+        "predicted_class": "Stress Decrease",
+        "count": 256
+      },
+      {
+        "actual_class": "Stress Increase",
+        "predicted_class": "Stable",
+        "count": 237
+      },
+      {
+        "actual_class": "Stress Decrease",
+        "predicted_class": "Stable",
+        "count": 122
+      },
+      {
+        "actual_class": "Stable",
+        "predicted_class": "Stress Increase",
+        "count": 52
+      },
+      {
+        "actual_class": "Stress Decrease",
+        "predicted_class": "Stress Increase",
+        "count": 29
+      }
+    ]
+  }
+}

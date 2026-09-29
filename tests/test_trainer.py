@@ -30,10 +30,7 @@ def create_classification_loader(
     )
 
     targets = torch.tensor(
-        [
-            index % 3
-            for index in range(sample_count)
-        ],
+        [index % 3 for index in range(sample_count)],
         dtype=torch.long,
     )
 
@@ -73,9 +70,7 @@ class TinyClassifier(nn.Module):
     ) -> torch.Tensor:
         """Return three class logits."""
 
-        return self.network(
-            inputs
-        )
+        return self.network(inputs)
 
 
 class ConstantClassifier(nn.Module):
@@ -84,11 +79,7 @@ class ConstantClassifier(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-        self.dummy_parameter = nn.Parameter(
-            torch.tensor(
-                0.0
-            )
-        )
+        self.dummy_parameter = nn.Parameter(torch.tensor(0.0))
 
     def forward(
         self,
@@ -104,34 +95,23 @@ class ConstantClassifier(nn.Module):
             device=inputs.device,
         )
 
-        return (
-            logits
-            + self.dummy_parameter * 0.0
-        )
+        return logits + self.dummy_parameter * 0.0
 
 
 def test_set_seed_makes_random_numbers_reproducible():
     """Setting the same seed should reproduce random values."""
 
-    set_seed(
-        42
-    )
+    set_seed(42)
 
     python_value_1 = random.random()
     numpy_value_1 = np.random.rand()
-    torch_value_1 = torch.rand(
-        1
-    )
+    torch_value_1 = torch.rand(1)
 
-    set_seed(
-        42
-    )
+    set_seed(42)
 
     python_value_2 = random.random()
     numpy_value_2 = np.random.rand()
-    torch_value_2 = torch.rand(
-        1
-    )
+    torch_value_2 = torch.rand(1)
 
     assert python_value_1 == python_value_2
 
@@ -163,15 +143,11 @@ def test_select_device_returns_supported_device():
 def test_training_epoch_returns_valid_metrics():
     """One training epoch should return finite loss and accuracy."""
 
-    set_seed(
-        42
-    )
+    set_seed(42)
 
     model = TinyClassifier()
 
-    data_loader = (
-        create_classification_loader()
-    )
+    data_loader = create_classification_loader()
 
     criterion = nn.CrossEntropyLoss()
 
@@ -185,14 +161,10 @@ def test_training_epoch_returns_valid_metrics():
         data_loader=data_loader,
         criterion=criterion,
         optimizer=optimizer,
-        device=torch.device(
-            "cpu"
-        ),
+        device=torch.device("cpu"),
     )
 
-    assert np.isfinite(
-        loss
-    )
+    assert np.isfinite(loss)
 
     assert loss > 0.0
 
@@ -202,15 +174,11 @@ def test_training_epoch_returns_valid_metrics():
 def test_training_epoch_updates_model_parameters():
     """Training should change at least one trainable parameter."""
 
-    set_seed(
-        42
-    )
+    set_seed(42)
 
     model = TinyClassifier()
 
-    data_loader = (
-        create_classification_loader()
-    )
+    data_loader = create_classification_loader()
 
     criterion = nn.CrossEntropyLoss()
 
@@ -219,25 +187,17 @@ def test_training_epoch_updates_model_parameters():
         lr=0.01,
     )
 
-    parameters_before = [
-        parameter.detach().clone()
-        for parameter in model.parameters()
-    ]
+    parameters_before = [parameter.detach().clone() for parameter in model.parameters()]
 
     run_training_epoch(
         model=model,
         data_loader=data_loader,
         criterion=criterion,
         optimizer=optimizer,
-        device=torch.device(
-            "cpu"
-        ),
+        device=torch.device("cpu"),
     )
 
-    parameters_after = [
-        parameter.detach().clone()
-        for parameter in model.parameters()
-    ]
+    parameters_after = [parameter.detach().clone() for parameter in model.parameters()]
 
     parameter_changed = any(
         not torch.equal(
@@ -247,6 +207,7 @@ def test_training_epoch_updates_model_parameters():
         for before, after in zip(
             parameters_before,
             parameters_after,
+            strict=False,
         )
     )
 
@@ -256,46 +217,33 @@ def test_training_epoch_updates_model_parameters():
 def test_validation_epoch_does_not_update_parameters():
     """Validation must never modify model weights."""
 
-    set_seed(
-        42
-    )
+    set_seed(42)
 
     model = TinyClassifier()
 
-    data_loader = (
-        create_classification_loader()
-    )
+    data_loader = create_classification_loader()
 
     criterion = nn.CrossEntropyLoss()
 
-    parameters_before = [
-        parameter.detach().clone()
-        for parameter in model.parameters()
-    ]
+    parameters_before = [parameter.detach().clone() for parameter in model.parameters()]
 
     loss, accuracy = run_validation_epoch(
         model=model,
         data_loader=data_loader,
         criterion=criterion,
-        device=torch.device(
-            "cpu"
-        ),
+        device=torch.device("cpu"),
     )
 
-    parameters_after = [
-        parameter.detach().clone()
-        for parameter in model.parameters()
-    ]
+    parameters_after = [parameter.detach().clone() for parameter in model.parameters()]
 
-    assert np.isfinite(
-        loss
-    )
+    assert np.isfinite(loss)
 
     assert 0.0 <= accuracy <= 1.0
 
     for before, after in zip(
         parameters_before,
         parameters_after,
+        strict=False,
     ):
         assert torch.equal(
             before,
@@ -306,27 +254,19 @@ def test_validation_epoch_does_not_update_parameters():
 def test_train_model_returns_complete_history():
     """The training function should record metrics for every epoch."""
 
-    set_seed(
-        42
-    )
+    set_seed(42)
 
     model = TinyClassifier()
 
-    train_loader = (
-        create_classification_loader()
-    )
+    train_loader = create_classification_loader()
 
-    validation_loader = (
-        create_classification_loader()
-    )
+    validation_loader = create_classification_loader()
 
     history = train_model(
         model=model,
         train_loader=train_loader,
         validation_loader=validation_loader,
-        device=torch.device(
-            "cpu"
-        ),
+        device=torch.device("cpu"),
         epochs=2,
         learning_rate=0.001,
         patience=2,
@@ -334,21 +274,13 @@ def test_train_model_returns_complete_history():
 
     assert history.epochs_trained == 2
 
-    assert len(
-        history.train_loss
-    ) == 2
+    assert len(history.train_loss) == 2
 
-    assert len(
-        history.validation_loss
-    ) == 2
+    assert len(history.validation_loss) == 2
 
-    assert len(
-        history.train_accuracy
-    ) == 2
+    assert len(history.train_accuracy) == 2
 
-    assert len(
-        history.validation_accuracy
-    ) == 2
+    assert len(history.validation_accuracy) == 2
 
     assert 1 <= history.best_epoch <= 2
 
@@ -358,21 +290,15 @@ def test_early_stopping_stops_constant_model():
 
     model = ConstantClassifier()
 
-    train_loader = (
-        create_classification_loader()
-    )
+    train_loader = create_classification_loader()
 
-    validation_loader = (
-        create_classification_loader()
-    )
+    validation_loader = create_classification_loader()
 
     history = train_model(
         model=model,
         train_loader=train_loader,
         validation_loader=validation_loader,
-        device=torch.device(
-            "cpu"
-        ),
+        device=torch.device("cpu"),
         epochs=10,
         learning_rate=0.001,
         patience=2,
@@ -423,35 +349,25 @@ def test_train_model_rejects_invalid_configuration(
 
     model = TinyClassifier()
 
-    train_loader = (
-        create_classification_loader()
-    )
+    train_loader = create_classification_loader()
 
-    validation_loader = (
-        create_classification_loader()
-    )
+    validation_loader = create_classification_loader()
 
     arguments = {
         "model": model,
         "train_loader": train_loader,
         "validation_loader": validation_loader,
-        "device": torch.device(
-            "cpu"
-        ),
+        "device": torch.device("cpu"),
         "epochs": 2,
         "learning_rate": 0.001,
         "patience": 2,
         "min_delta": 0.0001,
     }
 
-    arguments[
-        parameter_name
-    ] = parameter_value
+    arguments[parameter_name] = parameter_value
 
     with pytest.raises(
         ValueError,
         match=error_message,
     ):
-        train_model(
-            **arguments
-        )
+        train_model(**arguments)

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "purpose": "Integrity manifest for versioned, checkpoint-derived evidence",
+  "files": {
+    "data_snapshot.json": "532eea8499181123792aae8b56ed3154670d0078621aeaf7bf16c6f62b2144b0",
+    "final_metrics.json": "8a9a5986d231f4e4e61b07918886b8ec51387769da5e55c9e33fac5f94485674",
+    "roc_auc.json": "b89542101ba52109d183eeb39a82cb01506bc08734067b7e5ed6a738b156e6c6",
+    "lstm_stability.json": "67cca0cb9b4e8f0a61bbb7d6b547a040bf380dfb6f9abaf7961451633d89beaa",
+    "temporal_generalization.json": "3bb362e2fe87278e036b9396d9ad26d3612bbfde5c4b1c5b5dc24bb81e142c9f",
+    "transformer_explainability.json": "fac6b05627ab1a31f97f3345c4f7e8692be1163bfa1895fafa13a95a02cf59be",
+    "transformer_robustness.json": "b1ed9af3835f8654c81885b5fbe8e9631e5073233b677883487d81f0db09e447",
+    "tuning_summary.json": "f2bbeaa3132517a6130d9ac91e194e65595c46f45f289ffa85a3bfb5b0750f94"
+  }
+}

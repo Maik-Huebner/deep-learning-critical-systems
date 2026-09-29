@@ -5,7 +5,6 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-
 DEFAULT_SEQUENCE_LENGTH = 60
 DEFAULT_FEATURE_COUNT = 9
 DEFAULT_HIDDEN_SIZE = 128
@@ -43,64 +42,42 @@ class FinancialStressMLP(nn.Module):
         super().__init__()
 
         if sequence_length <= 0:
-            raise ValueError(
-                "Sequence length must be greater than zero."
-            )
+            raise ValueError("Sequence length must be greater than zero.")
 
         if feature_count <= 0:
-            raise ValueError(
-                "Feature count must be greater than zero."
-            )
+            raise ValueError("Feature count must be greater than zero.")
 
         if hidden_size <= 0:
-            raise ValueError(
-                "Hidden size must be greater than zero."
-            )
+            raise ValueError("Hidden size must be greater than zero.")
 
         if second_hidden_size <= 0:
-            raise ValueError(
-                "Second hidden size must be greater than zero."
-            )
+            raise ValueError("Second hidden size must be greater than zero.")
 
         if class_count <= 1:
-            raise ValueError(
-                "Class count must be greater than one."
-            )
+            raise ValueError("Class count must be greater than one.")
 
         if not 0.0 <= dropout < 1.0:
-            raise ValueError(
-                "Dropout must be between 0.0 and 1.0."
-            )
+            raise ValueError("Dropout must be between 0.0 and 1.0.")
 
         self.sequence_length = sequence_length
         self.feature_count = feature_count
 
-        input_size = (
-            sequence_length
-            * feature_count
-        )
+        input_size = sequence_length * feature_count
 
         self.network = nn.Sequential(
             nn.Flatten(),
-
             nn.Linear(
                 input_size,
                 hidden_size,
             ),
             nn.ReLU(),
-            nn.Dropout(
-                dropout
-            ),
-
+            nn.Dropout(dropout),
             nn.Linear(
                 hidden_size,
                 second_hidden_size,
             ),
             nn.ReLU(),
-            nn.Dropout(
-                dropout
-            ),
-
+            nn.Dropout(dropout),
             nn.Linear(
                 second_hidden_size,
                 class_count,
@@ -127,10 +104,7 @@ class FinancialStressMLP(nn.Module):
 
         if inputs.shape[2] != self.feature_count:
             raise ValueError(
-                "Input feature count does not match "
-                "the configured model feature count."
+                "Input feature count does not match the configured model feature count."
             )
 
-        return self.network(
-            inputs
-        )
+        return self.network(inputs)

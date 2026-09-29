@@ -11,7 +11,6 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-
 DEFAULT_EPOCHS = 50
 DEFAULT_LEARNING_RATE = 0.001
 DEFAULT_PATIENCE = 7
@@ -46,18 +45,12 @@ def select_device() -> torch.device:
     """Select the best available PyTorch device."""
 
     if torch.cuda.is_available():
-        return torch.device(
-            "cuda"
-        )
+        return torch.device("cuda")
 
     if torch.backends.mps.is_available():
-        return torch.device(
-            "mps"
-        )
+        return torch.device("mps")
 
-    return torch.device(
-        "cpu"
-    )
+    return torch.device("cpu")
 
 
 def run_training_epoch(
@@ -79,19 +72,13 @@ def run_training_epoch(
     total_samples = 0
 
     for features, targets in data_loader:
-        features = features.to(
-            device
-        )
+        features = features.to(device)
 
-        targets = targets.to(
-            device
-        )
+        targets = targets.to(device)
 
         optimizer.zero_grad()
 
-        logits = model(
-            features
-        )
+        logits = model(features)
 
         loss = criterion(
             logits,
@@ -102,35 +89,19 @@ def run_training_epoch(
 
         optimizer.step()
 
-        batch_size = targets.size(
-            0
-        )
+        batch_size = targets.size(0)
 
-        total_loss += (
-            loss.item()
-            * batch_size
-        )
+        total_loss += loss.item() * batch_size
 
-        predictions = logits.argmax(
-            dim=1
-        )
+        predictions = logits.argmax(dim=1)
 
-        total_correct += (
-            predictions
-            == targets
-        ).sum().item()
+        total_correct += (predictions == targets).sum().item()
 
         total_samples += batch_size
 
-    average_loss = (
-        total_loss
-        / total_samples
-    )
+    average_loss = total_loss / total_samples
 
-    accuracy = (
-        total_correct
-        / total_samples
-    )
+    accuracy = total_correct / total_samples
 
     return (
         average_loss,
@@ -157,52 +128,30 @@ def run_validation_epoch(
 
     with torch.no_grad():
         for features, targets in data_loader:
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            targets = targets.to(
-                device
-            )
+            targets = targets.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
             loss = criterion(
                 logits,
                 targets,
             )
 
-            batch_size = targets.size(
-                0
-            )
+            batch_size = targets.size(0)
 
-            total_loss += (
-                loss.item()
-                * batch_size
-            )
+            total_loss += loss.item() * batch_size
 
-            predictions = logits.argmax(
-                dim=1
-            )
+            predictions = logits.argmax(dim=1)
 
-            total_correct += (
-                predictions
-                == targets
-            ).sum().item()
+            total_correct += (predictions == targets).sum().item()
 
             total_samples += batch_size
 
-    average_loss = (
-        total_loss
-        / total_samples
-    )
+    average_loss = total_loss / total_samples
 
-    accuracy = (
-        total_correct
-        / total_samples
-    )
+    accuracy = total_correct / total_samples
 
     return (
         average_loss,
@@ -230,28 +179,18 @@ def train_model(
     """
 
     if epochs <= 0:
-        raise ValueError(
-            "Epoch count must be greater than zero."
-        )
+        raise ValueError("Epoch count must be greater than zero.")
 
     if learning_rate <= 0:
-        raise ValueError(
-            "Learning rate must be greater than zero."
-        )
+        raise ValueError("Learning rate must be greater than zero.")
 
     if patience <= 0:
-        raise ValueError(
-            "Patience must be greater than zero."
-        )
+        raise ValueError("Patience must be greater than zero.")
 
     if min_delta < 0:
-        raise ValueError(
-            "Minimum improvement must not be negative."
-        )
+        raise ValueError("Minimum improvement must not be negative.")
 
-    model.to(
-        device
-    )
+    model.to(device)
 
     criterion = nn.CrossEntropyLoss()
 
@@ -266,21 +205,15 @@ def train_model(
     train_accuracies = []
     validation_accuracies = []
 
-    best_validation_loss = float(
-        "inf"
-    )
+    best_validation_loss = float("inf")
 
-    best_model_state = deepcopy(
-        model.state_dict()
-    )
+    best_model_state = deepcopy(model.state_dict())
 
     best_epoch = 0
     epochs_without_improvement = 0
 
     print()
-    print(
-        "=== TRAINING ==="
-    )
+    print("=== TRAINING ===")
 
     print(
         "Device:",
@@ -329,21 +262,13 @@ def train_model(
             device=device,
         )
 
-        train_losses.append(
-            train_loss
-        )
+        train_losses.append(train_loss)
 
-        validation_losses.append(
-            validation_loss
-        )
+        validation_losses.append(validation_loss)
 
-        train_accuracies.append(
-            train_accuracy
-        )
+        train_accuracies.append(train_accuracy)
 
-        validation_accuracies.append(
-            validation_accuracy
-        )
+        validation_accuracies.append(validation_accuracy)
 
         print(
             f"Epoch {epoch:02d} | "
@@ -353,19 +278,12 @@ def train_model(
             f"Val Acc: {validation_accuracy:.4f}"
         )
 
-        improvement = (
-            best_validation_loss
-            - validation_loss
-        )
+        improvement = best_validation_loss - validation_loss
 
         if improvement > min_delta:
-            best_validation_loss = (
-                validation_loss
-            )
+            best_validation_loss = validation_loss
 
-            best_model_state = deepcopy(
-                model.state_dict()
-            )
+            best_model_state = deepcopy(model.state_dict())
 
             best_epoch = epoch
 
@@ -374,24 +292,15 @@ def train_model(
         else:
             epochs_without_improvement += 1
 
-        if (
-            epochs_without_improvement
-            >= patience
-        ):
+        if epochs_without_improvement >= patience:
             print()
-            print(
-                "Early stopping triggered."
-            )
+            print("Early stopping triggered.")
 
             break
 
-    model.load_state_dict(
-        best_model_state
-    )
+    model.load_state_dict(best_model_state)
 
-    epochs_trained = len(
-        train_losses
-    )
+    epochs_trained = len(train_losses)
 
     print()
     print(
@@ -415,10 +324,8 @@ def train_model(
     return TrainingHistory(
         train_loss=train_losses,
         validation_loss=validation_losses,
-
         train_accuracy=train_accuracies,
         validation_accuracy=validation_accuracies,
-
         best_epoch=best_epoch,
         epochs_trained=epochs_trained,
     )

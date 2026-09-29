@@ -43,29 +43,15 @@ from deep_learning_critical_systems.training.trainer import (
     select_device,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 CHECKPOINT_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "checkpoints"
-    / "transformer_tuned_model.pt"
+    PROJECT_ROOT / "artifacts" / "checkpoints" / "transformer_tuned_model.pt"
 )
 
-LOG_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-    / "transformer_robustness.json"
-)
+LOG_PATH = PROJECT_ROOT / "artifacts" / "logs" / "transformer_robustness.json"
 
-FIGURE_PATH = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-    / "transformer_robustness_noise.png"
-)
+FIGURE_PATH = PROJECT_ROOT / "reports" / "figures" / "transformer_robustness_noise.png"
 
 
 RANDOM_SEED = 42
@@ -88,9 +74,7 @@ def load_model(
     """Load the final tuned Transformer."""
 
     if not CHECKPOINT_PATH.exists():
-        raise FileNotFoundError(
-            f"Transformer checkpoint not found: {CHECKPOINT_PATH}"
-        )
+        raise FileNotFoundError(f"Transformer checkpoint not found: {CHECKPOINT_PATH}")
 
     checkpoint = torch.load(
         CHECKPOINT_PATH,
@@ -98,41 +82,19 @@ def load_model(
     )
 
     model = FinancialStressTransformer(
-        feature_count=checkpoint[
-            "feature_count"
-        ],
-        model_dimension=checkpoint[
-            "model_dimension"
-        ],
-        num_heads=checkpoint[
-            "num_heads"
-        ],
-        feed_forward_size=checkpoint[
-            "feed_forward_size"
-        ],
-        num_layers=checkpoint[
-            "num_layers"
-        ],
-        classifier_hidden_size=checkpoint[
-            "classifier_hidden_size"
-        ],
-        class_count=checkpoint[
-            "class_count"
-        ],
-        dropout=checkpoint[
-            "dropout"
-        ],
+        feature_count=checkpoint["feature_count"],
+        model_dimension=checkpoint["model_dimension"],
+        num_heads=checkpoint["num_heads"],
+        feed_forward_size=checkpoint["feed_forward_size"],
+        num_layers=checkpoint["num_layers"],
+        classifier_hidden_size=checkpoint["classifier_hidden_size"],
+        class_count=checkpoint["class_count"],
+        dropout=checkpoint["dropout"],
     )
 
-    model.load_state_dict(
-        checkpoint[
-            "model_state_dict"
-        ]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
-    model.to(
-        device
-    )
+    model.to(device)
 
     model.eval()
 
@@ -191,21 +153,9 @@ def calculate_metrics(
                 zero_division=0,
             )
         ),
-        "recall_stress_decrease": float(
-            class_recalls[
-                0
-            ]
-        ),
-        "recall_stable": float(
-            class_recalls[
-                1
-            ]
-        ),
-        "recall_stress_increase": float(
-            class_recalls[
-                2
-            ]
-        ),
+        "recall_stress_decrease": float(class_recalls[0]),
+        "recall_stable": float(class_recalls[1]),
+        "recall_stress_increase": float(class_recalls[2]),
     }
 
 
@@ -221,17 +171,9 @@ def collect_predictions(
     """Collect predictions with one controlled noise level."""
 
     if noise_standard_deviation < 0:
-        raise ValueError(
-            "Noise standard deviation must not be negative."
-        )
+        raise ValueError("Noise standard deviation must not be negative.")
 
-    torch.manual_seed(
-        RANDOM_SEED
-        + int(
-            noise_standard_deviation
-            * 1000
-        )
-    )
+    torch.manual_seed(RANDOM_SEED + int(noise_standard_deviation * 1000))
 
     targets = []
 
@@ -240,44 +182,19 @@ def collect_predictions(
     with torch.no_grad():
         for features, batch_targets in test_loader:
             if noise_standard_deviation > 0:
-                noise = (
-                    torch.randn_like(
-                        features
-                    )
-                    * noise_standard_deviation
-                )
+                noise = torch.randn_like(features) * noise_standard_deviation
 
-                features = (
-                    features
-                    + noise
-                )
+                features = features + noise
 
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
-            batch_predictions = (
-                logits.argmax(
-                    dim=1
-                )
-            )
+            batch_predictions = logits.argmax(dim=1)
 
-            targets.extend(
-                batch_targets
-                .numpy()
-                .tolist()
-            )
+            targets.extend(batch_targets.numpy().tolist())
 
-            predictions.extend(
-                batch_predictions
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            predictions.extend(batch_predictions.cpu().numpy().tolist())
 
     return (
         np.asarray(
@@ -297,20 +214,10 @@ def prediction_agreement(
 ) -> float:
     """Calculate agreement with clean model predictions."""
 
-    if (
-        reference_predictions.shape
-        != noisy_predictions.shape
-    ):
-        raise ValueError(
-            "Prediction arrays must have the same shape."
-        )
+    if reference_predictions.shape != noisy_predictions.shape:
+        raise ValueError("Prediction arrays must have the same shape.")
 
-    return float(
-        np.mean(
-            reference_predictions
-            == noisy_predictions
-        )
-    )
+    return float(np.mean(reference_predictions == noisy_predictions))
 
 
 def run_robustness_analysis(
@@ -320,13 +227,11 @@ def run_robustness_analysis(
 ) -> list[dict]:
     """Evaluate the frozen model under increasing noise."""
 
-    clean_targets, clean_predictions = (
-        collect_predictions(
-            model=model,
-            test_loader=test_loader,
-            device=device,
-            noise_standard_deviation=0.0,
-        )
+    clean_targets, clean_predictions = collect_predictions(
+        model=model,
+        test_loader=test_loader,
+        device=device,
+        noise_standard_deviation=0.0,
     )
 
     results = []
@@ -335,18 +240,14 @@ def run_robustness_analysis(
         if noise_level == 0.0:
             targets = clean_targets
 
-            predictions = (
-                clean_predictions
-            )
+            predictions = clean_predictions
 
         else:
-            targets, predictions = (
-                collect_predictions(
-                    model=model,
-                    test_loader=test_loader,
-                    device=device,
-                    noise_standard_deviation=noise_level,
-                )
+            targets, predictions = collect_predictions(
+                model=model,
+                test_loader=test_loader,
+                device=device,
+                noise_standard_deviation=noise_level,
             )
 
         metrics = calculate_metrics(
@@ -360,22 +261,13 @@ def run_robustness_analysis(
         )
 
         result = {
-            "noise_standard_deviation": (
-                noise_level
-            ),
-            "noise_percentage_of_standardized_unit": (
-                noise_level
-                * 100
-            ),
+            "noise_standard_deviation": (noise_level),
+            "noise_percentage_of_standardized_unit": (noise_level * 100),
             **metrics,
-            "prediction_agreement_with_clean": (
-                agreement
-            ),
+            "prediction_agreement_with_clean": (agreement),
         }
 
-        results.append(
-            result
-        )
+        results.append(result)
 
     return results
 
@@ -391,42 +283,19 @@ def save_plot(
     )
 
     noise_percentages = [
-        result[
-            "noise_percentage_of_standardized_unit"
-        ]
-        for result in results
+        result["noise_percentage_of_standardized_unit"] for result in results
     ]
 
-    accuracy_values = [
-        result[
-            "accuracy"
-        ]
-        * 100
-        for result in results
-    ]
+    accuracy_values = [result["accuracy"] * 100 for result in results]
 
-    macro_f1_values = [
-        result[
-            "macro_f1"
-        ]
-        * 100
-        for result in results
-    ]
+    macro_f1_values = [result["macro_f1"] * 100 for result in results]
 
     increase_recall_values = [
-        result[
-            "recall_stress_increase"
-        ]
-        * 100
-        for result in results
+        result["recall_stress_increase"] * 100 for result in results
     ]
 
     agreement_values = [
-        result[
-            "prediction_agreement_with_clean"
-        ]
-        * 100
-        for result in results
+        result["prediction_agreement_with_clean"] * 100 for result in results
     ]
 
     figure, axis = plt.subplots(
@@ -464,25 +333,15 @@ def save_plot(
         label="Agreement with Clean Predictions",
     )
 
-    axis.set_title(
-        "Transformer Robustness Under Standardized Input Noise"
-    )
+    axis.set_title("Transformer Robustness Under Standardized Input Noise")
 
-    axis.set_xlabel(
-        "Noise Standard Deviation (% of Standardized Unit)"
-    )
+    axis.set_xlabel("Noise Standard Deviation (% of Standardized Unit)")
 
-    axis.set_ylabel(
-        "Score (%)"
-    )
+    axis.set_ylabel("Score (%)")
 
-    axis.set_xticks(
-        noise_percentages
-    )
+    axis.set_xticks(noise_percentages)
 
-    axis.grid(
-        alpha=0.25
-    )
+    axis.grid(alpha=0.25)
 
     axis.legend()
 
@@ -494,9 +353,7 @@ def save_plot(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
     print(
         "Saved:",
@@ -516,19 +373,11 @@ def save_results(
     )
 
     payload = {
-        "model": (
-            "FinancialStressTransformer"
-        ),
-        "selected_run": checkpoint.get(
-            "selected_run"
-        ),
-        "analysis_split": (
-            "held_out_test_set"
-        ),
+        "model": ("FinancialStressTransformer"),
+        "selected_run": checkpoint.get("selected_run"),
+        "analysis_split": ("held_out_test_set"),
         "random_seed": RANDOM_SEED,
-        "method": (
-            "Gaussian noise added to standardized input features"
-        ),
+        "method": ("Gaussian noise added to standardized input features"),
         "interpretation": (
             "This analysis is a controlled robustness stress test. "
             "It does not model one specific real-world market shock "
@@ -557,20 +406,13 @@ def print_results(
     """Print the robustness results."""
 
     print()
-    print(
-        "=== TRANSFORMER ROBUSTNESS RESULTS ==="
-    )
+    print("=== TRANSFORMER ROBUSTNESS RESULTS ===")
 
     print()
 
-    print(
-        "Noise | Accuracy | Macro-F1 | "
-        "Increase Recall | Clean Agreement"
-    )
+    print("Noise | Accuracy | Macro-F1 | Increase Recall | Clean Agreement")
 
-    print(
-        "-" * 70
-    )
+    print("-" * 70)
 
     for result in results:
         print(
@@ -587,23 +429,17 @@ def main() -> None:
 
     prepared_data = prepare_ofr_data()
 
-    _, _, test_loader = (
-        create_data_loaders(
-            prepared_data,
-            batch_size=64,
-        )
+    _, _, test_loader = create_data_loaders(
+        prepared_data,
+        batch_size=64,
     )
 
     device = select_device()
 
-    model, checkpoint = load_model(
-        device
-    )
+    model, checkpoint = load_model(device)
 
     print()
-    print(
-        "=== TRANSFORMER ROBUSTNESS ANALYSIS ==="
-    )
+    print("=== TRANSFORMER ROBUSTNESS ANALYSIS ===")
 
     print(
         "Device:",
@@ -612,48 +448,29 @@ def main() -> None:
 
     print(
         "Selected run:",
-        checkpoint.get(
-            "selected_run"
-        ),
+        checkpoint.get("selected_run"),
     )
 
     print(
         "Test samples:",
-        len(
-            prepared_data.y_test
-        ),
+        len(prepared_data.y_test),
     )
 
-    print(
-        "Model retraining:"
-        " NO"
+    print("Model retraining: NO")
+
+    print("Hyperparameter tuning: NO")
+
+    print("Robustness method: standardized input noise")
+
+    results = run_robustness_analysis(
+        model=model,
+        test_loader=test_loader,
+        device=device,
     )
 
-    print(
-        "Hyperparameter tuning:"
-        " NO"
-    )
+    print_results(results)
 
-    print(
-        "Robustness method:"
-        " standardized input noise"
-    )
-
-    results = (
-        run_robustness_analysis(
-            model=model,
-            test_loader=test_loader,
-            device=device,
-        )
-    )
-
-    print_results(
-        results
-    )
-
-    save_plot(
-        results
-    )
+    save_plot(results)
 
     save_results(
         checkpoint=checkpoint,
@@ -661,9 +478,7 @@ def main() -> None:
     )
 
     print()
-    print(
-        "Robustness analysis completed."
-    )
+    print("Robustness analysis completed.")
 
 
 if __name__ == "__main__":

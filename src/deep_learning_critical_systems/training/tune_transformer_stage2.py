@@ -53,58 +53,28 @@ from deep_learning_critical_systems.training.trainer import (
     train_model,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-CHECKPOINT_DIR = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "checkpoints"
-)
+CHECKPOINT_DIR = PROJECT_ROOT / "artifacts" / "checkpoints"
 
-LOG_DIR = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-)
+LOG_DIR = PROJECT_ROOT / "artifacts" / "logs"
 
 
-STAGE_1_RESULTS_PATH = (
-    LOG_DIR
-    / "transformer_tuning_results.json"
-)
+STAGE_1_RESULTS_PATH = LOG_DIR / "transformer_tuning_results.json"
 
-STAGE_1_HISTORIES_PATH = (
-    LOG_DIR
-    / "transformer_tuning_histories.json"
-)
+STAGE_1_HISTORIES_PATH = LOG_DIR / "transformer_tuning_histories.json"
 
 
-FINAL_RESULTS_JSON_PATH = (
-    LOG_DIR
-    / "transformer_tuning_results_final.json"
-)
+FINAL_RESULTS_JSON_PATH = LOG_DIR / "transformer_tuning_results_final.json"
 
-FINAL_RESULTS_CSV_PATH = (
-    LOG_DIR
-    / "transformer_tuning_results_final.csv"
-)
+FINAL_RESULTS_CSV_PATH = LOG_DIR / "transformer_tuning_results_final.csv"
 
-FINAL_HISTORIES_PATH = (
-    LOG_DIR
-    / "transformer_tuning_histories_final.json"
-)
+FINAL_HISTORIES_PATH = LOG_DIR / "transformer_tuning_histories_final.json"
 
 
-FINAL_CHECKPOINT_PATH = (
-    CHECKPOINT_DIR
-    / "transformer_tuned_model.pt"
-)
+FINAL_CHECKPOINT_PATH = CHECKPOINT_DIR / "transformer_tuned_model.pt"
 
-FINAL_HISTORY_PATH = (
-    LOG_DIR
-    / "transformer_tuned_training_history.json"
-)
+FINAL_HISTORY_PATH = LOG_DIR / "transformer_tuned_training_history.json"
 
 
 RANDOM_SEED = 42
@@ -149,10 +119,7 @@ STAGE_2_CONFIGURATIONS = [
     },
     {
         "run_id": "T11",
-        "description": (
-            "T1 learning rate with lower dropout "
-            "and one encoder layer"
-        ),
+        "description": ("T1 learning rate with lower dropout and one encoder layer"),
         **BASE_MODEL_CONFIGURATION,
         "dropout": 0.10,
         "num_layers": 1,
@@ -166,13 +133,9 @@ def load_json(
     """Load a JSON file."""
 
     if not path.exists():
-        raise FileNotFoundError(
-            f"Required file not found: {path}"
-        )
+        raise FileNotFoundError(f"Required file not found: {path}")
 
-    return json.loads(
-        path.read_text()
-    )
+    return json.loads(path.read_text())
 
 
 def history_to_dict(
@@ -196,28 +159,14 @@ def create_model(
     """Create a Transformer from one experiment configuration."""
 
     return FinancialStressTransformer(
-        feature_count=len(
-            FEATURE_COLUMNS
-        ),
-        model_dimension=configuration[
-            "model_dimension"
-        ],
-        num_heads=configuration[
-            "num_heads"
-        ],
-        feed_forward_size=configuration[
-            "feed_forward_size"
-        ],
-        num_layers=configuration[
-            "num_layers"
-        ],
-        classifier_hidden_size=configuration[
-            "classifier_hidden_size"
-        ],
+        feature_count=len(FEATURE_COLUMNS),
+        model_dimension=configuration["model_dimension"],
+        num_heads=configuration["num_heads"],
+        feed_forward_size=configuration["feed_forward_size"],
+        num_layers=configuration["num_layers"],
+        classifier_hidden_size=configuration["classifier_hidden_size"],
         class_count=3,
-        dropout=configuration[
-            "dropout"
-        ],
+        dropout=configuration["dropout"],
     )
 
 
@@ -235,30 +184,15 @@ def evaluate_validation(
 
     with torch.no_grad():
         for features, batch_targets in validation_loader:
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
-            batch_predictions = logits.argmax(
-                dim=1
-            )
+            batch_predictions = logits.argmax(dim=1)
 
-            targets.extend(
-                batch_targets
-                .numpy()
-                .tolist()
-            )
+            targets.extend(batch_targets.numpy().tolist())
 
-            predictions.extend(
-                batch_predictions
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            predictions.extend(batch_predictions.cpu().numpy().tolist())
 
     targets_array = np.asarray(
         targets,
@@ -313,15 +247,9 @@ def evaluate_validation(
                 zero_division=0,
             )
         ),
-        "recall_stress_decrease": float(
-            class_recalls[0]
-        ),
-        "recall_stable": float(
-            class_recalls[1]
-        ),
-        "recall_stress_increase": float(
-            class_recalls[2]
-        ),
+        "recall_stress_decrease": float(class_recalls[0]),
+        "recall_stable": float(class_recalls[1]),
+        "recall_stress_increase": float(class_recalls[2]),
     }
 
 
@@ -334,59 +262,24 @@ def create_result(
     """Create one complete tuning result record."""
 
     parameter_count = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
 
     return {
-        "run_id": configuration[
-            "run_id"
-        ],
-        "description": configuration[
-            "description"
-        ],
-
-        "model_dimension": configuration[
-            "model_dimension"
-        ],
-        "num_heads": configuration[
-            "num_heads"
-        ],
-        "feed_forward_size": configuration[
-            "feed_forward_size"
-        ],
-        "num_layers": configuration[
-            "num_layers"
-        ],
-        "classifier_hidden_size": configuration[
-            "classifier_hidden_size"
-        ],
-        "dropout": configuration[
-            "dropout"
-        ],
-        "learning_rate": configuration[
-            "learning_rate"
-        ],
+        "run_id": configuration["run_id"],
+        "description": configuration["description"],
+        "model_dimension": configuration["model_dimension"],
+        "num_heads": configuration["num_heads"],
+        "feed_forward_size": configuration["feed_forward_size"],
+        "num_layers": configuration["num_layers"],
+        "classifier_hidden_size": configuration["classifier_hidden_size"],
+        "dropout": configuration["dropout"],
+        "learning_rate": configuration["learning_rate"],
         "batch_size": BATCH_SIZE,
-
         "parameter_count": parameter_count,
-
-        "best_epoch": history[
-            "best_epoch"
-        ],
-        "epochs_trained": history[
-            "epochs_trained"
-        ],
-
-        "validation_loss": float(
-            min(
-                history[
-                    "validation_loss"
-                ]
-            )
-        ),
-
+        "best_epoch": history["best_epoch"],
+        "epochs_trained": history["epochs_trained"],
+        "validation_loss": float(min(history["validation_loss"])),
         **metrics,
     }
 
@@ -397,31 +290,22 @@ def print_result(
     """Print the most important values of one experiment."""
 
     print()
-    print(
-        f"{result['run_id']} - "
-        f"{result['description']}"
-    )
+    print(f"{result['run_id']} - {result['description']}")
 
     print(
         "Best epoch:",
-        result[
-            "best_epoch"
-        ],
+        result["best_epoch"],
     )
 
     print(
         "Epochs trained:",
-        result[
-            "epochs_trained"
-        ],
+        result["epochs_trained"],
     )
 
     print(
         "Validation loss:",
         round(
-            result[
-                "validation_loss"
-            ],
+            result["validation_loss"],
             4,
         ),
     )
@@ -429,9 +313,7 @@ def print_result(
     print(
         "Validation accuracy:",
         round(
-            result[
-                "validation_accuracy"
-            ],
+            result["validation_accuracy"],
             4,
         ),
     )
@@ -439,9 +321,7 @@ def print_result(
     print(
         "Validation Macro Precision:",
         round(
-            result[
-                "validation_macro_precision"
-            ],
+            result["validation_macro_precision"],
             4,
         ),
     )
@@ -449,9 +329,7 @@ def print_result(
     print(
         "Validation Macro Recall:",
         round(
-            result[
-                "validation_macro_recall"
-            ],
+            result["validation_macro_recall"],
             4,
         ),
     )
@@ -459,9 +337,7 @@ def print_result(
     print(
         "Validation Macro-F1:",
         round(
-            result[
-                "validation_macro_f1"
-            ],
+            result["validation_macro_f1"],
             4,
         ),
     )
@@ -469,9 +345,7 @@ def print_result(
     print(
         "Stress Decrease recall:",
         round(
-            result[
-                "recall_stress_decrease"
-            ],
+            result["recall_stress_decrease"],
             4,
         ),
     )
@@ -479,9 +353,7 @@ def print_result(
     print(
         "Stable recall:",
         round(
-            result[
-                "recall_stable"
-            ],
+            result["recall_stable"],
             4,
         ),
     )
@@ -489,9 +361,7 @@ def print_result(
     print(
         "Stress Increase recall:",
         round(
-            result[
-                "recall_stress_increase"
-            ],
+            result["recall_stress_increase"],
             4,
         ),
     )
@@ -524,9 +394,7 @@ def save_combined_results(
         + "\n"
     )
 
-    fieldnames = list(
-        results[0].keys()
-    )
+    fieldnames = list(results[0].keys())
 
     with FINAL_RESULTS_CSV_PATH.open(
         "w",
@@ -539,26 +407,16 @@ def save_combined_results(
 
         writer.writeheader()
 
-        writer.writerows(
-            results
-        )
+        writer.writerows(results)
 
     print()
-    print(
-        "Saved final combined tuning results:"
-    )
+    print("Saved final combined tuning results:")
 
-    print(
-        FINAL_RESULTS_JSON_PATH
-    )
+    print(FINAL_RESULTS_JSON_PATH)
 
-    print(
-        FINAL_RESULTS_CSV_PATH
-    )
+    print(FINAL_RESULTS_CSV_PATH)
 
-    print(
-        FINAL_HISTORIES_PATH
-    )
+    print(FINAL_HISTORIES_PATH)
 
 
 def save_selected_model(
@@ -582,110 +440,36 @@ def save_selected_model(
     checkpoint = {
         "model_state_dict": state_dict,
         "model_name": "FinancialStressTransformer",
-
-        "selected_run": result[
-            "run_id"
-        ],
-
-        "selection_metric": (
-            "validation_macro_f1"
-        ),
-
-        "selection_tie_breaker": (
-            "validation_loss"
-        ),
-
+        "selected_run": result["run_id"],
+        "selection_metric": ("validation_macro_f1"),
+        "selection_tie_breaker": ("validation_loss"),
         "sequence_length": WINDOW_SIZE,
-
-        "feature_count": len(
-            FEATURE_COLUMNS
-        ),
-
-        "model_dimension": result[
-            "model_dimension"
-        ],
-
-        "num_heads": result[
-            "num_heads"
-        ],
-
-        "feed_forward_size": result[
-            "feed_forward_size"
-        ],
-
-        "num_layers": result[
-            "num_layers"
-        ],
-
-        "classifier_hidden_size": result[
-            "classifier_hidden_size"
-        ],
-
+        "feature_count": len(FEATURE_COLUMNS),
+        "model_dimension": result["model_dimension"],
+        "num_heads": result["num_heads"],
+        "feed_forward_size": result["feed_forward_size"],
+        "num_layers": result["num_layers"],
+        "classifier_hidden_size": result["classifier_hidden_size"],
         "class_count": 3,
-
-        "dropout": result[
-            "dropout"
-        ],
-
+        "dropout": result["dropout"],
         "forecast_horizon": FORECAST_HORIZON,
-
-        "low_threshold": (
-            prepared_data.low_threshold
-        ),
-
-        "high_threshold": (
-            prepared_data.high_threshold
-        ),
-
+        "low_threshold": (prepared_data.low_threshold),
+        "high_threshold": (prepared_data.high_threshold),
         "feature_names": FEATURE_COLUMNS,
-
         "random_seed": RANDOM_SEED,
-
         "batch_size": BATCH_SIZE,
-
-        "learning_rate": result[
-            "learning_rate"
-        ],
-
+        "learning_rate": result["learning_rate"],
         "maximum_epochs": DEFAULT_EPOCHS,
-
         "patience": DEFAULT_PATIENCE,
-
-        "best_epoch": result[
-            "best_epoch"
-        ],
-
-        "validation_loss": result[
-            "validation_loss"
-        ],
-
-        "validation_accuracy": result[
-            "validation_accuracy"
-        ],
-
-        "validation_macro_precision": result[
-            "validation_macro_precision"
-        ],
-
-        "validation_macro_recall": result[
-            "validation_macro_recall"
-        ],
-
-        "validation_macro_f1": result[
-            "validation_macro_f1"
-        ],
-
-        "recall_stress_decrease": result[
-            "recall_stress_decrease"
-        ],
-
-        "recall_stable": result[
-            "recall_stable"
-        ],
-
-        "recall_stress_increase": result[
-            "recall_stress_increase"
-        ],
+        "best_epoch": result["best_epoch"],
+        "validation_loss": result["validation_loss"],
+        "validation_accuracy": result["validation_accuracy"],
+        "validation_macro_precision": result["validation_macro_precision"],
+        "validation_macro_recall": result["validation_macro_recall"],
+        "validation_macro_f1": result["validation_macro_f1"],
+        "recall_stress_decrease": result["recall_stress_decrease"],
+        "recall_stable": result["recall_stable"],
+        "recall_stress_increase": result["recall_stress_increase"],
     }
 
     torch.save(
@@ -702,29 +486,19 @@ def save_selected_model(
     )
 
     print()
-    print(
-        "Saved final selected Transformer:"
-    )
+    print("Saved final selected Transformer:")
 
-    print(
-        FINAL_CHECKPOINT_PATH
-    )
+    print(FINAL_CHECKPOINT_PATH)
 
-    print(
-        FINAL_HISTORY_PATH
-    )
+    print(FINAL_HISTORY_PATH)
 
 
 def main() -> None:
     """Run Stage 2 of Transformer hyperparameter tuning."""
 
-    stage_1_results = load_json(
-        STAGE_1_RESULTS_PATH
-    )
+    stage_1_results = load_json(STAGE_1_RESULTS_PATH)
 
-    stage_1_histories = load_json(
-        STAGE_1_HISTORIES_PATH
-    )
+    stage_1_histories = load_json(STAGE_1_HISTORIES_PATH)
 
     prepared_data = prepare_ofr_data()
 
@@ -740,9 +514,7 @@ def main() -> None:
     device = select_device()
 
     print()
-    print(
-        "=== TRANSFORMER HYPERPARAMETER TUNING: STAGE 2 ==="
-    )
+    print("=== TRANSFORMER HYPERPARAMETER TUNING: STAGE 2 ===")
 
     print(
         "Device:",
@@ -751,45 +523,29 @@ def main() -> None:
 
     print(
         "Training samples:",
-        len(
-            prepared_data.y_train
-        ),
+        len(prepared_data.y_train),
     )
 
     print(
         "Validation samples:",
-        len(
-            prepared_data.y_validation
-        ),
+        len(prepared_data.y_validation),
     )
 
     print(
         "Stage-1 experiments loaded:",
-        len(
-            stage_1_results
-        ),
+        len(stage_1_results),
     )
 
     print(
         "New Stage-2 experiments:",
-        len(
-            STAGE_2_CONFIGURATIONS
-        ),
+        len(STAGE_2_CONFIGURATIONS),
     )
 
-    print(
-        "Primary selection metric:"
-        " Validation Macro-F1"
-    )
+    print("Primary selection metric: Validation Macro-F1")
 
-    print(
-        "Tie-breaker:"
-        " Validation Loss"
-    )
+    print("Tie-breaker: Validation Loss")
 
-    print(
-        "Test set used: NO"
-    )
+    print("Test set used: NO")
 
     stage_2_results = []
 
@@ -799,69 +555,45 @@ def main() -> None:
 
     for configuration in STAGE_2_CONFIGURATIONS:
         print()
-        print(
-            "=" * 72
-        )
+        print("=" * 72)
 
-        print(
-            "Starting "
-            f"{configuration['run_id']}: "
-            f"{configuration['description']}"
-        )
+        print(f"Starting {configuration['run_id']}: {configuration['description']}")
 
-        print(
-            "=" * 72
-        )
+        print("=" * 72)
 
         print(
             "Model dimension:",
-            configuration[
-                "model_dimension"
-            ],
+            configuration["model_dimension"],
         )
 
         print(
             "Attention heads:",
-            configuration[
-                "num_heads"
-            ],
+            configuration["num_heads"],
         )
 
         print(
             "Encoder layers:",
-            configuration[
-                "num_layers"
-            ],
+            configuration["num_layers"],
         )
 
         print(
             "Feed-forward size:",
-            configuration[
-                "feed_forward_size"
-            ],
+            configuration["feed_forward_size"],
         )
 
         print(
             "Dropout:",
-            configuration[
-                "dropout"
-            ],
+            configuration["dropout"],
         )
 
         print(
             "Learning rate:",
-            configuration[
-                "learning_rate"
-            ],
+            configuration["learning_rate"],
         )
 
-        set_seed(
-            RANDOM_SEED
-        )
+        set_seed(RANDOM_SEED)
 
-        model = create_model(
-            configuration
-        )
+        model = create_model(configuration)
 
         history = train_model(
             model=model,
@@ -869,15 +601,11 @@ def main() -> None:
             validation_loader=validation_loader,
             device=device,
             epochs=DEFAULT_EPOCHS,
-            learning_rate=configuration[
-                "learning_rate"
-            ],
+            learning_rate=configuration["learning_rate"],
             patience=DEFAULT_PATIENCE,
         )
 
-        history_data = history_to_dict(
-            history
-        )
+        history_data = history_to_dict(history)
 
         validation_metrics = evaluate_validation(
             model,
@@ -892,37 +620,18 @@ def main() -> None:
             metrics=validation_metrics,
         )
 
-        stage_2_results.append(
-            result
-        )
+        stage_2_results.append(result)
 
-        stage_2_histories[
-            configuration[
-                "run_id"
-            ]
-        ] = history_data
+        stage_2_histories[configuration["run_id"]] = history_data
 
-        stage_2_state_dicts[
-            configuration[
-                "run_id"
-            ]
-        ] = {
-            name: parameter
-            .detach()
-            .cpu()
-            .clone()
-            for name, parameter
-            in model.state_dict().items()
+        stage_2_state_dicts[configuration["run_id"]] = {
+            name: parameter.detach().cpu().clone()
+            for name, parameter in model.state_dict().items()
         }
 
-        print_result(
-            result
-        )
+        print_result(result)
 
-    all_results = (
-        stage_1_results
-        + stage_2_results
-    )
+    all_results = stage_1_results + stage_2_results
 
     all_histories = {
         **stage_1_histories,
@@ -932,27 +641,17 @@ def main() -> None:
     ranked_results = sorted(
         all_results,
         key=lambda result: (
-            -result[
-                "validation_macro_f1"
-            ],
-            result[
-                "validation_loss"
-            ],
+            -result["validation_macro_f1"],
+            result["validation_loss"],
         ),
     )
 
     print()
-    print(
-        "=" * 72
-    )
+    print("=" * 72)
 
-    print(
-        "=== FINAL TUNING RANKING ==="
-    )
+    print("=== FINAL TUNING RANKING ===")
 
-    print(
-        "=" * 72
-    )
+    print("=" * 72)
 
     print()
 
@@ -973,9 +672,7 @@ def main() -> None:
             f"{result['recall_stress_increase']:.4f}"
         )
 
-    best_result = ranked_results[
-        0
-    ]
+    best_result = ranked_results[0]
 
     save_combined_results(
         results=all_results,
@@ -991,16 +688,10 @@ def main() -> None:
     # below.
     #
 
-    selected_run = best_result[
-        "run_id"
-    ]
+    selected_run = best_result["run_id"]
 
     if selected_run in stage_2_state_dicts:
-        selected_state_dict = deepcopy(
-            stage_2_state_dicts[
-                selected_run
-            ]
-        )
+        selected_state_dict = deepcopy(stage_2_state_dicts[selected_run])
 
     else:
         existing_checkpoint = torch.load(
@@ -1008,31 +699,18 @@ def main() -> None:
             map_location="cpu",
         )
 
-        if (
-            existing_checkpoint.get(
-                "selected_run"
-            )
-            != selected_run
-        ):
+        if existing_checkpoint.get("selected_run") != selected_run:
             raise RuntimeError(
                 "The winning Stage-1 model state is not "
                 "available in the current checkpoint."
             )
 
         selected_state_dict = {
-            name: parameter
-            .detach()
-            .cpu()
-            .clone()
-            for name, parameter
-            in existing_checkpoint[
-                "model_state_dict"
-            ].items()
+            name: parameter.detach().cpu().clone()
+            for name, parameter in existing_checkpoint["model_state_dict"].items()
         }
 
-    selected_history = all_histories[
-        selected_run
-    ]
+    selected_history = all_histories[selected_run]
 
     save_selected_model(
         result=best_result,
@@ -1042,94 +720,66 @@ def main() -> None:
     )
 
     print()
-    print(
-        "=" * 72
-    )
+    print("=" * 72)
 
-    print(
-        "=== FINAL SELECTED TRANSFORMER ==="
-    )
+    print("=== FINAL SELECTED TRANSFORMER ===")
 
-    print(
-        "=" * 72
-    )
+    print("=" * 72)
 
     print(
         "Run:",
-        best_result[
-            "run_id"
-        ],
+        best_result["run_id"],
     )
 
     print(
         "Description:",
-        best_result[
-            "description"
-        ],
+        best_result["description"],
     )
 
     print(
         "Model dimension:",
-        best_result[
-            "model_dimension"
-        ],
+        best_result["model_dimension"],
     )
 
     print(
         "Attention heads:",
-        best_result[
-            "num_heads"
-        ],
+        best_result["num_heads"],
     )
 
     print(
         "Encoder layers:",
-        best_result[
-            "num_layers"
-        ],
+        best_result["num_layers"],
     )
 
     print(
         "Feed-forward size:",
-        best_result[
-            "feed_forward_size"
-        ],
+        best_result["feed_forward_size"],
     )
 
     print(
         "Dropout:",
-        best_result[
-            "dropout"
-        ],
+        best_result["dropout"],
     )
 
     print(
         "Learning rate:",
-        best_result[
-            "learning_rate"
-        ],
+        best_result["learning_rate"],
     )
 
     print(
         "Parameter count:",
-        best_result[
-            "parameter_count"
-        ],
+        best_result["parameter_count"],
     )
 
     print(
         "Best epoch:",
-        best_result[
-            "best_epoch"
-        ],
+        best_result["best_epoch"],
     )
 
     print(
         "Validation loss:",
         round(
-            best_result[
-                "validation_loss"
-            ],
+            best_result["validation_loss"],
             4,
         ),
     )
@@ -1137,9 +787,7 @@ def main() -> None:
     print(
         "Validation accuracy:",
         round(
-            best_result[
-                "validation_accuracy"
-            ],
+            best_result["validation_accuracy"],
             4,
         ),
     )
@@ -1147,9 +795,7 @@ def main() -> None:
     print(
         "Validation Macro-F1:",
         round(
-            best_result[
-                "validation_macro_f1"
-            ],
+            best_result["validation_macro_f1"],
             4,
         ),
     )
@@ -1157,22 +803,16 @@ def main() -> None:
     print(
         "Stress Increase recall:",
         round(
-            best_result[
-                "recall_stress_increase"
-            ],
+            best_result["recall_stress_increase"],
             4,
         ),
     )
 
     print()
-    print(
-        "Test set used during tuning: NO"
-    )
+    print("Test set used during tuning: NO")
 
     print()
-    print(
-        "Stage-2 Transformer tuning completed."
-    )
+    print("Stage-2 Transformer tuning completed.")
 
 
 if __name__ == "__main__":

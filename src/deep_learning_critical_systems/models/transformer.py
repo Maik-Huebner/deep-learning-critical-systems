@@ -7,7 +7,6 @@ import math
 import torch
 from torch import nn
 
-
 DEFAULT_FEATURE_COUNT = 9
 DEFAULT_MODEL_DIMENSION = 64
 DEFAULT_NUM_HEADS = 4
@@ -37,21 +36,15 @@ class SinusoidalPositionalEncoding(nn.Module):
         super().__init__()
 
         if model_dimension <= 0:
-            raise ValueError(
-                "Model dimension must be greater than zero."
-            )
+            raise ValueError("Model dimension must be greater than zero.")
 
         if max_sequence_length <= 0:
-            raise ValueError(
-                "Maximum sequence length must be greater than zero."
-            )
+            raise ValueError("Maximum sequence length must be greater than zero.")
 
         position = torch.arange(
             max_sequence_length,
             dtype=torch.float32,
-        ).unsqueeze(
-            1
-        )
+        ).unsqueeze(1)
 
         divisor = torch.exp(
             torch.arange(
@@ -60,12 +53,7 @@ class SinusoidalPositionalEncoding(nn.Module):
                 2,
                 dtype=torch.float32,
             )
-            * (
-                -math.log(
-                    10000.0
-                )
-                / model_dimension
-            )
+            * (-math.log(10000.0) / model_dimension)
         )
 
         encoding = torch.zeros(
@@ -77,10 +65,7 @@ class SinusoidalPositionalEncoding(nn.Module):
         encoding[
             :,
             0::2,
-        ] = torch.sin(
-            position
-            * divisor
-        )
+        ] = torch.sin(position * divisor)
 
         if model_dimension > 1:
             encoding[
@@ -89,7 +74,7 @@ class SinusoidalPositionalEncoding(nn.Module):
             ] = torch.cos(
                 position
                 * divisor[
-                    :encoding[
+                    : encoding[
                         :,
                         1::2,
                     ].shape[1]
@@ -98,9 +83,7 @@ class SinusoidalPositionalEncoding(nn.Module):
 
         self.register_buffer(
             "encoding",
-            encoding.unsqueeze(
-                0
-            ),
+            encoding.unsqueeze(0),
         )
 
     def forward(
@@ -115,16 +98,11 @@ class SinusoidalPositionalEncoding(nn.Module):
                 "(batch_size, sequence_length, model_dimension)."
             )
 
-        sequence_length = inputs.shape[
-            1
-        ]
+        sequence_length = inputs.shape[1]
 
-        if sequence_length > self.encoding.shape[
-            1
-        ]:
+        if sequence_length > self.encoding.shape[1]:
             raise ValueError(
-                "Input sequence is longer than the configured "
-                "maximum sequence length."
+                "Input sequence is longer than the configured maximum sequence length."
             )
 
         return (
@@ -167,30 +145,21 @@ class TransformerEncoderBlock(nn.Module):
         super().__init__()
 
         if model_dimension <= 0:
-            raise ValueError(
-                "Model dimension must be greater than zero."
-            )
+            raise ValueError("Model dimension must be greater than zero.")
 
         if num_heads <= 0:
-            raise ValueError(
-                "Number of attention heads must be greater than zero."
-            )
+            raise ValueError("Number of attention heads must be greater than zero.")
 
         if model_dimension % num_heads != 0:
             raise ValueError(
-                "Model dimension must be divisible "
-                "by the number of attention heads."
+                "Model dimension must be divisible by the number of attention heads."
             )
 
         if feed_forward_size <= 0:
-            raise ValueError(
-                "Feed-forward size must be greater than zero."
-            )
+            raise ValueError("Feed-forward size must be greater than zero.")
 
         if not 0.0 <= dropout < 1.0:
-            raise ValueError(
-                "Dropout must be between 0.0 and 1.0."
-            )
+            raise ValueError("Dropout must be between 0.0 and 1.0.")
 
         self.self_attention = nn.MultiheadAttention(
             embed_dim=model_dimension,
@@ -199,13 +168,9 @@ class TransformerEncoderBlock(nn.Module):
             batch_first=True,
         )
 
-        self.attention_dropout = nn.Dropout(
-            dropout
-        )
+        self.attention_dropout = nn.Dropout(dropout)
 
-        self.attention_norm = nn.LayerNorm(
-            model_dimension
-        )
+        self.attention_norm = nn.LayerNorm(model_dimension)
 
         self.feed_forward = nn.Sequential(
             nn.Linear(
@@ -213,22 +178,16 @@ class TransformerEncoderBlock(nn.Module):
                 feed_forward_size,
             ),
             nn.ReLU(),
-            nn.Dropout(
-                dropout
-            ),
+            nn.Dropout(dropout),
             nn.Linear(
                 feed_forward_size,
                 model_dimension,
             ),
         )
 
-        self.feed_forward_dropout = nn.Dropout(
-            dropout
-        )
+        self.feed_forward_dropout = nn.Dropout(dropout)
 
-        self.feed_forward_norm = nn.LayerNorm(
-            model_dimension
-        )
+        self.feed_forward_norm = nn.LayerNorm(model_dimension)
 
     def forward(
         self,
@@ -251,33 +210,15 @@ class TransformerEncoderBlock(nn.Module):
             average_attn_weights=False,
         )
 
-        attention_output = (
-            self.attention_dropout(
-                attention_output
-            )
-        )
+        attention_output = self.attention_dropout(attention_output)
 
-        hidden = self.attention_norm(
-            inputs
-            + attention_output
-        )
+        hidden = self.attention_norm(inputs + attention_output)
 
-        feed_forward_output = (
-            self.feed_forward(
-                hidden
-            )
-        )
+        feed_forward_output = self.feed_forward(hidden)
 
-        feed_forward_output = (
-            self.feed_forward_dropout(
-                feed_forward_output
-            )
-        )
+        feed_forward_output = self.feed_forward_dropout(feed_forward_output)
 
-        output = self.feed_forward_norm(
-            hidden
-            + feed_forward_output
-        )
+        output = self.feed_forward_norm(hidden + feed_forward_output)
 
         return (
             output,
@@ -319,50 +260,33 @@ class FinancialStressTransformer(nn.Module):
         super().__init__()
 
         if feature_count <= 0:
-            raise ValueError(
-                "Feature count must be greater than zero."
-            )
+            raise ValueError("Feature count must be greater than zero.")
 
         if model_dimension <= 0:
-            raise ValueError(
-                "Model dimension must be greater than zero."
-            )
+            raise ValueError("Model dimension must be greater than zero.")
 
         if num_heads <= 0:
-            raise ValueError(
-                "Number of attention heads must be greater than zero."
-            )
+            raise ValueError("Number of attention heads must be greater than zero.")
 
         if model_dimension % num_heads != 0:
             raise ValueError(
-                "Model dimension must be divisible "
-                "by the number of attention heads."
+                "Model dimension must be divisible by the number of attention heads."
             )
 
         if feed_forward_size <= 0:
-            raise ValueError(
-                "Feed-forward size must be greater than zero."
-            )
+            raise ValueError("Feed-forward size must be greater than zero.")
 
         if num_layers <= 0:
-            raise ValueError(
-                "Number of encoder layers must be greater than zero."
-            )
+            raise ValueError("Number of encoder layers must be greater than zero.")
 
         if classifier_hidden_size <= 0:
-            raise ValueError(
-                "Classifier hidden size must be greater than zero."
-            )
+            raise ValueError("Classifier hidden size must be greater than zero.")
 
         if class_count <= 1:
-            raise ValueError(
-                "Class count must be greater than one."
-            )
+            raise ValueError("Class count must be greater than one.")
 
         if not 0.0 <= dropout < 1.0:
-            raise ValueError(
-                "Dropout must be between 0.0 and 1.0."
-            )
+            raise ValueError("Dropout must be between 0.0 and 1.0.")
 
         self.feature_count = feature_count
         self.model_dimension = model_dimension
@@ -372,16 +296,12 @@ class FinancialStressTransformer(nn.Module):
             model_dimension,
         )
 
-        self.positional_encoding = (
-            SinusoidalPositionalEncoding(
-                model_dimension=model_dimension,
-                max_sequence_length=max_sequence_length,
-            )
+        self.positional_encoding = SinusoidalPositionalEncoding(
+            model_dimension=model_dimension,
+            max_sequence_length=max_sequence_length,
         )
 
-        self.input_dropout = nn.Dropout(
-            dropout
-        )
+        self.input_dropout = nn.Dropout(dropout)
 
         self.encoder_blocks = nn.ModuleList(
             [
@@ -391,9 +311,7 @@ class FinancialStressTransformer(nn.Module):
                     feed_forward_size=feed_forward_size,
                     dropout=dropout,
                 )
-                for _ in range(
-                    num_layers
-                )
+                for _ in range(num_layers)
             ]
         )
 
@@ -403,9 +321,7 @@ class FinancialStressTransformer(nn.Module):
                 classifier_hidden_size,
             ),
             nn.ReLU(),
-            nn.Dropout(
-                dropout
-            ),
+            nn.Dropout(dropout),
             nn.Linear(
                 classifier_hidden_size,
                 class_count,
@@ -430,21 +346,14 @@ class FinancialStressTransformer(nn.Module):
 
         if inputs.shape[2] != self.feature_count:
             raise ValueError(
-                "Input feature count does not match "
-                "the configured model feature count."
+                "Input feature count does not match the configured model feature count."
             )
 
-        hidden = self.input_projection(
-            inputs
-        )
+        hidden = self.input_projection(inputs)
 
-        hidden = self.positional_encoding(
-            hidden
-        )
+        hidden = self.positional_encoding(hidden)
 
-        hidden = self.input_dropout(
-            hidden
-        )
+        hidden = self.input_dropout(hidden)
 
         attention_maps = []
 
@@ -457,13 +366,8 @@ class FinancialStressTransformer(nn.Module):
                 return_attention=return_attention,
             )
 
-            if (
-                return_attention
-                and attention_weights is not None
-            ):
-                attention_maps.append(
-                    attention_weights
-                )
+            if return_attention and attention_weights is not None:
+                attention_maps.append(attention_weights)
 
         return (
             hidden,
@@ -481,13 +385,9 @@ class FinancialStressTransformer(nn.Module):
             return_attention=False,
         )
 
-        pooled = hidden.mean(
-            dim=1
-        )
+        pooled = hidden.mean(dim=1)
 
-        logits = self.classifier(
-            pooled
-        )
+        logits = self.classifier(pooled)
 
         return logits
 
@@ -508,13 +408,9 @@ class FinancialStressTransformer(nn.Module):
             return_attention=True,
         )
 
-        pooled = hidden.mean(
-            dim=1
-        )
+        pooled = hidden.mean(dim=1)
 
-        logits = self.classifier(
-            pooled
-        )
+        logits = self.classifier(pooled)
 
         return (
             logits,

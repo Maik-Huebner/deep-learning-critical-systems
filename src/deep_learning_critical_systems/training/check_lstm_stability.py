@@ -54,52 +54,23 @@ from deep_learning_critical_systems.training.trainer import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-CHECKPOINT_DIR = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "checkpoints"
-)
+CHECKPOINT_DIR = PROJECT_ROOT / "artifacts" / "checkpoints"
 
-LOG_DIR = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-)
+LOG_DIR = PROJECT_ROOT / "artifacts" / "logs"
 
-FINAL_CHECKPOINT_PATH = (
-    CHECKPOINT_DIR
-    / "lstm_tuned_model.pt"
-)
+FINAL_CHECKPOINT_PATH = CHECKPOINT_DIR / "lstm_tuned_model.pt"
 
-FINAL_HISTORY_PATH = (
-    LOG_DIR
-    / "lstm_tuned_training_history.json"
-)
+FINAL_HISTORY_PATH = LOG_DIR / "lstm_tuned_training_history.json"
 
-STABILITY_RESULTS_JSON_PATH = (
-    LOG_DIR
-    / "lstm_stability_results.json"
-)
+STABILITY_RESULTS_JSON_PATH = LOG_DIR / "lstm_stability_results.json"
 
-STABILITY_RESULTS_CSV_PATH = (
-    LOG_DIR
-    / "lstm_stability_results.csv"
-)
+STABILITY_RESULTS_CSV_PATH = LOG_DIR / "lstm_stability_results.csv"
 
-STABILITY_SUMMARY_JSON_PATH = (
-    LOG_DIR
-    / "lstm_stability_summary.json"
-)
+STABILITY_SUMMARY_JSON_PATH = LOG_DIR / "lstm_stability_summary.json"
 
-STABILITY_SUMMARY_CSV_PATH = (
-    LOG_DIR
-    / "lstm_stability_summary.csv"
-)
+STABILITY_SUMMARY_CSV_PATH = LOG_DIR / "lstm_stability_summary.csv"
 
-STABILITY_HISTORIES_PATH = (
-    LOG_DIR
-    / "lstm_stability_histories.json"
-)
+STABILITY_HISTORIES_PATH = LOG_DIR / "lstm_stability_histories.json"
 
 CANONICAL_SEED = 42
 
@@ -122,9 +93,7 @@ FINALIST_CONFIGURATIONS = [
     },
     {
         "run_id": "L9",
-        "description": (
-            "Lower learning rate with higher classifier dropout"
-        ),
+        "description": ("Lower learning rate with higher classifier dropout"),
         "hidden_size": 64,
         "classifier_hidden_size": 32,
         "dropout": 0.30,
@@ -154,19 +123,11 @@ def create_model(
     """Create one LSTM finalist configuration."""
 
     return FinancialStressLSTM(
-        feature_count=len(
-            FEATURE_COLUMNS
-        ),
-        hidden_size=configuration[
-            "hidden_size"
-        ],
-        classifier_hidden_size=configuration[
-            "classifier_hidden_size"
-        ],
+        feature_count=len(FEATURE_COLUMNS),
+        hidden_size=configuration["hidden_size"],
+        classifier_hidden_size=configuration["classifier_hidden_size"],
         class_count=3,
-        dropout=configuration[
-            "dropout"
-        ],
+        dropout=configuration["dropout"],
     )
 
 
@@ -184,30 +145,15 @@ def evaluate_validation(
 
     with torch.no_grad():
         for features, batch_targets in validation_loader:
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
-            batch_predictions = logits.argmax(
-                dim=1
-            )
+            batch_predictions = logits.argmax(dim=1)
 
-            targets.extend(
-                batch_targets
-                .numpy()
-                .tolist()
-            )
+            targets.extend(batch_targets.numpy().tolist())
 
-            predictions.extend(
-                batch_predictions
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            predictions.extend(batch_predictions.cpu().numpy().tolist())
 
     targets_array = np.asarray(
         targets,
@@ -262,15 +208,9 @@ def evaluate_validation(
                 zero_division=0,
             )
         ),
-        "recall_stress_decrease": float(
-            class_recalls[0]
-        ),
-        "recall_stable": float(
-            class_recalls[1]
-        ),
-        "recall_stress_increase": float(
-            class_recalls[2]
-        ),
+        "recall_stress_decrease": float(class_recalls[0]),
+        "recall_stable": float(class_recalls[1]),
+        "recall_stress_increase": float(class_recalls[2]),
     }
 
 
@@ -284,46 +224,22 @@ def build_run_result(
     """Create one result record for one configuration and one seed."""
 
     parameter_count = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
 
     return {
-        "run_id": configuration[
-            "run_id"
-        ],
-        "description": configuration[
-            "description"
-        ],
+        "run_id": configuration["run_id"],
+        "description": configuration["description"],
         "seed": seed,
-        "hidden_size": configuration[
-            "hidden_size"
-        ],
-        "classifier_hidden_size": configuration[
-            "classifier_hidden_size"
-        ],
-        "dropout": configuration[
-            "dropout"
-        ],
-        "learning_rate": configuration[
-            "learning_rate"
-        ],
+        "hidden_size": configuration["hidden_size"],
+        "classifier_hidden_size": configuration["classifier_hidden_size"],
+        "dropout": configuration["dropout"],
+        "learning_rate": configuration["learning_rate"],
         "batch_size": BATCH_SIZE,
         "parameter_count": parameter_count,
-        "best_epoch": history[
-            "best_epoch"
-        ],
-        "epochs_trained": history[
-            "epochs_trained"
-        ],
-        "validation_loss": float(
-            min(
-                history[
-                    "validation_loss"
-                ]
-            )
-        ),
+        "best_epoch": history["best_epoch"],
+        "epochs_trained": history["epochs_trained"],
+        "validation_loss": float(min(history["validation_loss"])),
         **validation_metrics,
     }
 
@@ -335,100 +251,42 @@ def summarize_configuration(
     """Summarize stability metrics across the predefined seeds."""
 
     macro_f1_values = np.asarray(
-        [
-            result[
-                "validation_macro_f1"
-            ]
-            for result in run_results
-        ],
+        [result["validation_macro_f1"] for result in run_results],
         dtype=np.float64,
     )
 
     validation_loss_values = np.asarray(
-        [
-            result[
-                "validation_loss"
-            ]
-            for result in run_results
-        ],
+        [result["validation_loss"] for result in run_results],
         dtype=np.float64,
     )
 
     accuracy_values = np.asarray(
-        [
-            result[
-                "validation_accuracy"
-            ]
-            for result in run_results
-        ],
+        [result["validation_accuracy"] for result in run_results],
         dtype=np.float64,
     )
 
     increase_recall_values = np.asarray(
-        [
-            result[
-                "recall_stress_increase"
-            ]
-            for result in run_results
-        ],
+        [result["recall_stress_increase"] for result in run_results],
         dtype=np.float64,
     )
 
     return {
-        "run_id": configuration[
-            "run_id"
-        ],
-        "description": configuration[
-            "description"
-        ],
-        "seed_count": len(
-            run_results
-        ),
+        "run_id": configuration["run_id"],
+        "description": configuration["description"],
+        "seed_count": len(run_results),
         "seeds": STABILITY_SEEDS,
-        "hidden_size": configuration[
-            "hidden_size"
-        ],
-        "classifier_hidden_size": configuration[
-            "classifier_hidden_size"
-        ],
-        "dropout": configuration[
-            "dropout"
-        ],
-        "learning_rate": configuration[
-            "learning_rate"
-        ],
-        "mean_validation_macro_f1": float(
-            macro_f1_values.mean()
-        ),
-        "std_validation_macro_f1": float(
-            macro_f1_values.std(
-                ddof=0
-            )
-        ),
-        "mean_validation_loss": float(
-            validation_loss_values.mean()
-        ),
-        "std_validation_loss": float(
-            validation_loss_values.std(
-                ddof=0
-            )
-        ),
-        "mean_validation_accuracy": float(
-            accuracy_values.mean()
-        ),
-        "std_validation_accuracy": float(
-            accuracy_values.std(
-                ddof=0
-            )
-        ),
-        "mean_recall_stress_increase": float(
-            increase_recall_values.mean()
-        ),
-        "std_recall_stress_increase": float(
-            increase_recall_values.std(
-                ddof=0
-            )
-        ),
+        "hidden_size": configuration["hidden_size"],
+        "classifier_hidden_size": configuration["classifier_hidden_size"],
+        "dropout": configuration["dropout"],
+        "learning_rate": configuration["learning_rate"],
+        "mean_validation_macro_f1": float(macro_f1_values.mean()),
+        "std_validation_macro_f1": float(macro_f1_values.std(ddof=0)),
+        "mean_validation_loss": float(validation_loss_values.mean()),
+        "std_validation_loss": float(validation_loss_values.std(ddof=0)),
+        "mean_validation_accuracy": float(accuracy_values.mean()),
+        "std_validation_accuracy": float(accuracy_values.std(ddof=0)),
+        "mean_recall_stress_increase": float(increase_recall_values.mean()),
+        "std_recall_stress_increase": float(increase_recall_values.std(ddof=0)),
     }
 
 
@@ -438,24 +296,17 @@ def print_run_result(
     """Print one seed-specific validation result."""
 
     print()
-    print(
-        f"{result['run_id']} | "
-        f"Seed {result['seed']}"
-    )
+    print(f"{result['run_id']} | Seed {result['seed']}")
 
     print(
         "Best epoch:",
-        result[
-            "best_epoch"
-        ],
+        result["best_epoch"],
     )
 
     print(
         "Validation loss:",
         round(
-            result[
-                "validation_loss"
-            ],
+            result["validation_loss"],
             4,
         ),
     )
@@ -463,9 +314,7 @@ def print_run_result(
     print(
         "Validation accuracy:",
         round(
-            result[
-                "validation_accuracy"
-            ],
+            result["validation_accuracy"],
             4,
         ),
     )
@@ -473,9 +322,7 @@ def print_run_result(
     print(
         "Validation Macro-F1:",
         round(
-            result[
-                "validation_macro_f1"
-            ],
+            result["validation_macro_f1"],
             4,
         ),
     )
@@ -483,9 +330,7 @@ def print_run_result(
     print(
         "Stress Increase recall:",
         round(
-            result[
-                "recall_stress_increase"
-            ],
+            result["recall_stress_increase"],
             4,
         ),
     )
@@ -497,17 +342,12 @@ def print_summary(
     """Print the stability summary of one finalist."""
 
     print()
-    print(
-        f"{summary['run_id']} - "
-        f"{summary['description']}"
-    )
+    print(f"{summary['run_id']} - {summary['description']}")
 
     print(
         "Mean Validation Macro-F1:",
         round(
-            summary[
-                "mean_validation_macro_f1"
-            ],
+            summary["mean_validation_macro_f1"],
             4,
         ),
     )
@@ -515,9 +355,7 @@ def print_summary(
     print(
         "Std Validation Macro-F1:",
         round(
-            summary[
-                "std_validation_macro_f1"
-            ],
+            summary["std_validation_macro_f1"],
             4,
         ),
     )
@@ -525,9 +363,7 @@ def print_summary(
     print(
         "Mean Validation Loss:",
         round(
-            summary[
-                "mean_validation_loss"
-            ],
+            summary["mean_validation_loss"],
             4,
         ),
     )
@@ -535,9 +371,7 @@ def print_summary(
     print(
         "Mean Validation Accuracy:",
         round(
-            summary[
-                "mean_validation_accuracy"
-            ],
+            summary["mean_validation_accuracy"],
             4,
         ),
     )
@@ -545,9 +379,7 @@ def print_summary(
     print(
         "Mean Stress Increase Recall:",
         round(
-            summary[
-                "mean_recall_stress_increase"
-            ],
+            summary["mean_recall_stress_increase"],
             4,
         ),
     )
@@ -579,17 +411,11 @@ def save_results(
     ) as csv_file:
         writer = csv.DictWriter(
             csv_file,
-            fieldnames=list(
-                run_results[
-                    0
-                ].keys()
-            ),
+            fieldnames=list(run_results[0].keys()),
         )
 
         writer.writeheader()
-        writer.writerows(
-            run_results
-        )
+        writer.writerows(run_results)
 
     STABILITY_SUMMARY_JSON_PATH.write_text(
         json.dumps(
@@ -605,12 +431,7 @@ def save_results(
         summary_rows.append(
             {
                 key: (
-                    ",".join(
-                        str(seed)
-                        for seed in value
-                    )
-                    if key == "seeds"
-                    else value
+                    ",".join(str(seed) for seed in value) if key == "seeds" else value
                 )
                 for key, value in summary.items()
             }
@@ -622,17 +443,11 @@ def save_results(
     ) as csv_file:
         writer = csv.DictWriter(
             csv_file,
-            fieldnames=list(
-                summary_rows[
-                    0
-                ].keys()
-            ),
+            fieldnames=list(summary_rows[0].keys()),
         )
 
         writer.writeheader()
-        writer.writerows(
-            summary_rows
-        )
+        writer.writerows(summary_rows)
 
     STABILITY_HISTORIES_PATH.write_text(
         json.dumps(
@@ -643,24 +458,12 @@ def save_results(
     )
 
     print()
-    print(
-        "Saved stability analysis:"
-    )
-    print(
-        STABILITY_RESULTS_JSON_PATH
-    )
-    print(
-        STABILITY_RESULTS_CSV_PATH
-    )
-    print(
-        STABILITY_SUMMARY_JSON_PATH
-    )
-    print(
-        STABILITY_SUMMARY_CSV_PATH
-    )
-    print(
-        STABILITY_HISTORIES_PATH
-    )
+    print("Saved stability analysis:")
+    print(STABILITY_RESULTS_JSON_PATH)
+    print(STABILITY_RESULTS_CSV_PATH)
+    print(STABILITY_SUMMARY_JSON_PATH)
+    print(STABILITY_SUMMARY_CSV_PATH)
+    print(STABILITY_HISTORIES_PATH)
 
 
 def save_final_model(
@@ -686,90 +489,40 @@ def save_final_model(
     checkpoint = {
         "model_state_dict": canonical_state_dict,
         "model_name": "FinancialStressLSTM",
-        "selected_run": selected_configuration[
-            "run_id"
-        ],
-        "selection_method": (
-            "three_seed_validation_stability_check"
-        ),
-        "selection_metric": (
-            "mean_validation_macro_f1"
-        ),
-        "selection_tie_breaker": (
-            "mean_validation_loss"
-        ),
+        "selected_run": selected_configuration["run_id"],
+        "selection_method": ("three_seed_validation_stability_check"),
+        "selection_metric": ("mean_validation_macro_f1"),
+        "selection_tie_breaker": ("mean_validation_loss"),
         "stability_seeds": STABILITY_SEEDS,
         "canonical_model_seed": CANONICAL_SEED,
         "sequence_length": WINDOW_SIZE,
-        "feature_count": len(
-            FEATURE_COLUMNS
-        ),
-        "hidden_size": selected_configuration[
-            "hidden_size"
-        ],
-        "classifier_hidden_size": selected_configuration[
-            "classifier_hidden_size"
-        ],
+        "feature_count": len(FEATURE_COLUMNS),
+        "hidden_size": selected_configuration["hidden_size"],
+        "classifier_hidden_size": selected_configuration["classifier_hidden_size"],
         "class_count": 3,
-        "dropout": selected_configuration[
-            "dropout"
-        ],
+        "dropout": selected_configuration["dropout"],
         "forecast_horizon": FORECAST_HORIZON,
-        "low_threshold": (
-            prepared_data.low_threshold
-        ),
-        "high_threshold": (
-            prepared_data.high_threshold
-        ),
+        "low_threshold": (prepared_data.low_threshold),
+        "high_threshold": (prepared_data.high_threshold),
         "feature_names": FEATURE_COLUMNS,
         "batch_size": BATCH_SIZE,
-        "learning_rate": selected_configuration[
-            "learning_rate"
-        ],
+        "learning_rate": selected_configuration["learning_rate"],
         "maximum_epochs": DEFAULT_EPOCHS,
         "patience": DEFAULT_PATIENCE,
-        "best_epoch": canonical_result[
-            "best_epoch"
-        ],
-        "validation_loss": canonical_result[
-            "validation_loss"
-        ],
-        "validation_accuracy": canonical_result[
-            "validation_accuracy"
-        ],
-        "validation_macro_precision": canonical_result[
-            "validation_macro_precision"
-        ],
-        "validation_macro_recall": canonical_result[
-            "validation_macro_recall"
-        ],
-        "validation_macro_f1": canonical_result[
-            "validation_macro_f1"
-        ],
-        "recall_stress_decrease": canonical_result[
-            "recall_stress_decrease"
-        ],
-        "recall_stable": canonical_result[
-            "recall_stable"
-        ],
-        "recall_stress_increase": canonical_result[
-            "recall_stress_increase"
-        ],
-        "mean_validation_macro_f1": selected_summary[
-            "mean_validation_macro_f1"
-        ],
-        "std_validation_macro_f1": selected_summary[
-            "std_validation_macro_f1"
-        ],
-        "mean_validation_loss": selected_summary[
-            "mean_validation_loss"
-        ],
-        "mean_validation_accuracy": selected_summary[
-            "mean_validation_accuracy"
-        ],
-        "mean_recall_stress_increase": selected_summary[
-            "mean_recall_stress_increase"
-        ],
+        "best_epoch": canonical_result["best_epoch"],
+        "validation_loss": canonical_result["validation_loss"],
+        "validation_accuracy": canonical_result["validation_accuracy"],
+        "validation_macro_precision": canonical_result["validation_macro_precision"],
+        "validation_macro_recall": canonical_result["validation_macro_recall"],
+        "validation_macro_f1": canonical_result["validation_macro_f1"],
+        "recall_stress_decrease": canonical_result["recall_stress_decrease"],
+        "recall_stable": canonical_result["recall_stable"],
+        "recall_stress_increase": canonical_result["recall_stress_increase"],
+        "mean_validation_macro_f1": selected_summary["mean_validation_macro_f1"],
+        "std_validation_macro_f1": selected_summary["std_validation_macro_f1"],
+        "mean_validation_loss": selected_summary["mean_validation_loss"],
+        "mean_validation_accuracy": selected_summary["mean_validation_accuracy"],
+        "mean_recall_stress_increase": selected_summary["mean_recall_stress_increase"],
     }
 
     torch.save(
@@ -786,15 +539,9 @@ def save_final_model(
     )
 
     print()
-    print(
-        "Saved final stability-selected LSTM:"
-    )
-    print(
-        FINAL_CHECKPOINT_PATH
-    )
-    print(
-        FINAL_HISTORY_PATH
-    )
+    print("Saved final stability-selected LSTM:")
+    print(FINAL_CHECKPOINT_PATH)
+    print(FINAL_HISTORY_PATH)
 
 
 def main() -> None:
@@ -805,9 +552,7 @@ def main() -> None:
     device = select_device()
 
     print()
-    print(
-        "=== LSTM MULTI-SEED STABILITY CHECK ==="
-    )
+    print("=== LSTM MULTI-SEED STABILITY CHECK ===")
 
     print(
         "Device:",
@@ -816,13 +561,7 @@ def main() -> None:
 
     print(
         "Finalists:",
-        ", ".join(
-            configuration[
-                "run_id"
-            ]
-            for configuration
-            in FINALIST_CONFIGURATIONS
-        ),
+        ", ".join(configuration["run_id"] for configuration in FINALIST_CONFIGURATIONS),
     )
 
     print(
@@ -830,19 +569,11 @@ def main() -> None:
         STABILITY_SEEDS,
     )
 
-    print(
-        "Primary selection metric:"
-        " Mean Validation Macro-F1"
-    )
+    print("Primary selection metric: Mean Validation Macro-F1")
 
-    print(
-        "Tie-breaker:"
-        " Mean Validation Loss"
-    )
+    print("Tie-breaker: Mean Validation Loss")
 
-    print(
-        "Test set used: NO"
-    )
+    print("Test set used: NO")
 
     run_results = []
     histories = {}
@@ -853,33 +584,19 @@ def main() -> None:
 
     for configuration in FINALIST_CONFIGURATIONS:
         print()
+        print("=" * 72)
         print(
-            "=" * 72
+            f"Configuration {configuration['run_id']}: {configuration['description']}"
         )
-        print(
-            f"Configuration {configuration['run_id']}: "
-            f"{configuration['description']}"
-        )
-        print(
-            "=" * 72
-        )
+        print("=" * 72)
 
         for seed in STABILITY_SEEDS:
             print()
-            print(
-                "-" * 72
-            )
-            print(
-                f"Training {configuration['run_id']} "
-                f"with seed {seed}"
-            )
-            print(
-                "-" * 72
-            )
+            print("-" * 72)
+            print(f"Training {configuration['run_id']} with seed {seed}")
+            print("-" * 72)
 
-            set_seed(
-                seed
-            )
+            set_seed(seed)
 
             (
                 train_loader,
@@ -890,9 +607,7 @@ def main() -> None:
                 batch_size=BATCH_SIZE,
             )
 
-            model = create_model(
-                configuration
-            )
+            model = create_model(configuration)
 
             history = train_model(
                 model=model,
@@ -900,15 +615,11 @@ def main() -> None:
                 validation_loader=validation_loader,
                 device=device,
                 epochs=DEFAULT_EPOCHS,
-                learning_rate=configuration[
-                    "learning_rate"
-                ],
+                learning_rate=configuration["learning_rate"],
                 patience=DEFAULT_PATIENCE,
             )
 
-            history_data = history_to_dict(
-                history
-            )
+            history_data = history_to_dict(history)
 
             validation_metrics = evaluate_validation(
                 model,
@@ -924,48 +635,23 @@ def main() -> None:
                 validation_metrics=validation_metrics,
             )
 
-            run_results.append(
-                result
-            )
+            run_results.append(result)
 
-            history_key = (
-                f"{configuration['run_id']}"
-                f"_seed_{seed}"
-            )
+            history_key = f"{configuration['run_id']}_seed_{seed}"
 
-            histories[
-                history_key
-            ] = history_data
+            histories[history_key] = history_data
 
             if seed == CANONICAL_SEED:
-                canonical_state_dicts[
-                    configuration[
-                        "run_id"
-                    ]
-                ] = {
-                    name: parameter
-                    .detach()
-                    .cpu()
-                    .clone()
-                    for name, parameter
-                    in model.state_dict().items()
+                canonical_state_dicts[configuration["run_id"]] = {
+                    name: parameter.detach().cpu().clone()
+                    for name, parameter in model.state_dict().items()
                 }
 
-                canonical_histories[
-                    configuration[
-                        "run_id"
-                    ]
-                ] = history_data
+                canonical_histories[configuration["run_id"]] = history_data
 
-                canonical_results[
-                    configuration[
-                        "run_id"
-                    ]
-                ] = result
+                canonical_results[configuration["run_id"]] = result
 
-            print_run_result(
-                result
-            )
+            print_run_result(result)
 
     summaries = []
 
@@ -973,12 +659,7 @@ def main() -> None:
         configuration_results = [
             result
             for result in run_results
-            if result[
-                "run_id"
-            ]
-            == configuration[
-                "run_id"
-            ]
+            if result["run_id"] == configuration["run_id"]
         ]
 
         summary = summarize_configuration(
@@ -986,53 +667,32 @@ def main() -> None:
             configuration_results,
         )
 
-        summaries.append(
-            summary
-        )
+        summaries.append(summary)
 
     ranked_summaries = sorted(
         summaries,
         key=lambda summary: (
-            -summary[
-                "mean_validation_macro_f1"
-            ],
-            summary[
-                "mean_validation_loss"
-            ],
+            -summary["mean_validation_macro_f1"],
+            summary["mean_validation_loss"],
         ),
     )
 
     print()
-    print(
-        "=" * 72
-    )
-    print(
-        "=== STABILITY SUMMARY ==="
-    )
-    print(
-        "=" * 72
-    )
+    print("=" * 72)
+    print("=== STABILITY SUMMARY ===")
+    print("=" * 72)
 
     for summary in ranked_summaries:
-        print_summary(
-            summary
-        )
+        print_summary(summary)
 
-    selected_summary = ranked_summaries[
-        0
-    ]
+    selected_summary = ranked_summaries[0]
 
-    selected_run = selected_summary[
-        "run_id"
-    ]
+    selected_run = selected_summary["run_id"]
 
     selected_configuration = next(
         configuration
         for configuration in FINALIST_CONFIGURATIONS
-        if configuration[
-            "run_id"
-        ]
-        == selected_run
+        if configuration["run_id"] == selected_run
     )
 
     save_results(
@@ -1044,30 +704,16 @@ def main() -> None:
     save_final_model(
         selected_configuration=selected_configuration,
         selected_summary=selected_summary,
-        canonical_result=canonical_results[
-            selected_run
-        ],
-        canonical_state_dict=deepcopy(
-            canonical_state_dicts[
-                selected_run
-            ]
-        ),
-        canonical_history=canonical_histories[
-            selected_run
-        ],
+        canonical_result=canonical_results[selected_run],
+        canonical_state_dict=deepcopy(canonical_state_dicts[selected_run]),
+        canonical_history=canonical_histories[selected_run],
         prepared_data=prepared_data,
     )
 
     print()
-    print(
-        "=" * 72
-    )
-    print(
-        "=== FINAL STABILITY-SELECTED LSTM ==="
-    )
-    print(
-        "=" * 72
-    )
+    print("=" * 72)
+    print("=== FINAL STABILITY-SELECTED LSTM ===")
+    print("=" * 72)
 
     print(
         "Run:",
@@ -1076,45 +722,33 @@ def main() -> None:
 
     print(
         "Description:",
-        selected_configuration[
-            "description"
-        ],
+        selected_configuration["description"],
     )
 
     print(
         "Hidden size:",
-        selected_configuration[
-            "hidden_size"
-        ],
+        selected_configuration["hidden_size"],
     )
 
     print(
         "Classifier hidden size:",
-        selected_configuration[
-            "classifier_hidden_size"
-        ],
+        selected_configuration["classifier_hidden_size"],
     )
 
     print(
         "Dropout:",
-        selected_configuration[
-            "dropout"
-        ],
+        selected_configuration["dropout"],
     )
 
     print(
         "Learning rate:",
-        selected_configuration[
-            "learning_rate"
-        ],
+        selected_configuration["learning_rate"],
     )
 
     print(
         "Mean Validation Macro-F1:",
         round(
-            selected_summary[
-                "mean_validation_macro_f1"
-            ],
+            selected_summary["mean_validation_macro_f1"],
             4,
         ),
     )
@@ -1122,9 +756,7 @@ def main() -> None:
     print(
         "Std Validation Macro-F1:",
         round(
-            selected_summary[
-                "std_validation_macro_f1"
-            ],
+            selected_summary["std_validation_macro_f1"],
             4,
         ),
     )
@@ -1132,9 +764,7 @@ def main() -> None:
     print(
         "Mean Validation Loss:",
         round(
-            selected_summary[
-                "mean_validation_loss"
-            ],
+            selected_summary["mean_validation_loss"],
             4,
         ),
     )
@@ -1142,9 +772,7 @@ def main() -> None:
     print(
         "Mean Stress Increase Recall:",
         round(
-            selected_summary[
-                "mean_recall_stress_increase"
-            ],
+            selected_summary["mean_recall_stress_increase"],
             4,
         ),
     )
@@ -1155,14 +783,10 @@ def main() -> None:
     )
 
     print()
-    print(
-        "Test set used during stability check: NO"
-    )
+    print("Test set used during stability check: NO")
 
     print()
-    print(
-        "LSTM multi-seed stability check completed."
-    )
+    print("LSTM multi-seed stability check completed.")
 
 
 if __name__ == "__main__":

@@ -31,28 +31,16 @@ from deep_learning_critical_systems.training.trainer import (
     select_device,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 CHECKPOINT_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "checkpoints"
-    / "transformer_tuned_model.pt"
+    PROJECT_ROOT / "artifacts" / "checkpoints" / "transformer_tuned_model.pt"
 )
 
-METRICS_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-    / "transformer_test_metrics.json"
-)
+METRICS_PATH = PROJECT_ROOT / "artifacts" / "logs" / "transformer_test_metrics.json"
 
 CONFUSION_MATRIX_FIGURE_PATH = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-    / "transformer_confusion_matrix.png"
+    PROJECT_ROOT / "reports" / "figures" / "transformer_confusion_matrix.png"
 )
 
 
@@ -63,9 +51,7 @@ def load_model(
     """Load the tuned Transformer checkpoint."""
 
     if not checkpoint_path.exists():
-        raise FileNotFoundError(
-            f"Transformer checkpoint not found: {checkpoint_path}"
-        )
+        raise FileNotFoundError(f"Transformer checkpoint not found: {checkpoint_path}")
 
     checkpoint = torch.load(
         checkpoint_path,
@@ -78,16 +64,12 @@ def load_model(
         num_heads=checkpoint["num_heads"],
         feed_forward_size=checkpoint["feed_forward_size"],
         num_layers=checkpoint["num_layers"],
-        classifier_hidden_size=checkpoint[
-            "classifier_hidden_size"
-        ],
+        classifier_hidden_size=checkpoint["classifier_hidden_size"],
         class_count=checkpoint["class_count"],
         dropout=checkpoint["dropout"],
     )
 
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     model.to(device)
     model.eval()
@@ -107,28 +89,15 @@ def collect_predictions(
 
     with torch.no_grad():
         for features, targets in data_loader:
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
-            predictions = logits.argmax(
-                dim=1
-            )
+            predictions = logits.argmax(dim=1)
 
-            all_targets.extend(
-                targets.numpy().tolist()
-            )
+            all_targets.extend(targets.numpy().tolist())
 
-            all_predictions.extend(
-                predictions
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            all_predictions.extend(predictions.cpu().numpy().tolist())
 
     targets_array = np.asarray(
         all_targets,
@@ -152,22 +121,12 @@ def determine_training_majority_class(
     """Determine the majority class using training labels only."""
 
     if training_targets.ndim != 1:
-        raise ValueError(
-            "Training targets must be one-dimensional."
-        )
+        raise ValueError("Training targets must be one-dimensional.")
 
     if len(training_targets) == 0:
-        raise ValueError(
-            "Training targets must not be empty."
-        )
+        raise ValueError("Training targets must not be empty.")
 
-    return int(
-        np.bincount(
-            training_targets.astype(
-                np.int64
-            )
-        ).argmax()
-    )
+    return int(np.bincount(training_targets.astype(np.int64)).argmax())
 
 
 def create_majority_baseline(
@@ -232,9 +191,7 @@ def save_confusion_matrix_plot(
         exist_ok=True,
     )
 
-    figure, axis = plt.subplots(
-        figsize=(7, 6)
-    )
+    figure, axis = plt.subplots(figsize=(7, 6))
 
     image = axis.imshow(
         matrix,
@@ -246,33 +203,15 @@ def save_confusion_matrix_plot(
         ax=axis,
     )
 
-    axis.set_title(
-        "Transformer Confusion Matrix"
-    )
+    axis.set_title("Transformer Confusion Matrix")
 
-    axis.set_xlabel(
-        "Predicted Class"
-    )
+    axis.set_xlabel("Predicted Class")
 
-    axis.set_ylabel(
-        "True Class"
-    )
+    axis.set_ylabel("True Class")
 
-    axis.set_xticks(
-        range(
-            len(
-                CLASS_NAMES
-            )
-        )
-    )
+    axis.set_xticks(range(len(CLASS_NAMES)))
 
-    axis.set_yticks(
-        range(
-            len(
-                CLASS_NAMES
-            )
-        )
-    )
+    axis.set_yticks(range(len(CLASS_NAMES)))
 
     axis.set_xticklabels(
         CLASS_NAMES,
@@ -280,21 +219,12 @@ def save_confusion_matrix_plot(
         ha="right",
     )
 
-    axis.set_yticklabels(
-        CLASS_NAMES
-    )
+    axis.set_yticklabels(CLASS_NAMES)
 
-    threshold = (
-        matrix.max()
-        / 2.0
-    )
+    threshold = matrix.max() / 2.0
 
-    for row_index in range(
-        matrix.shape[0]
-    ):
-        for column_index in range(
-            matrix.shape[1]
-        ):
+    for row_index in range(matrix.shape[0]):
+        for column_index in range(matrix.shape[1]):
             value = matrix[
                 row_index,
                 column_index,
@@ -303,16 +233,10 @@ def save_confusion_matrix_plot(
             axis.text(
                 column_index,
                 row_index,
-                str(
-                    value
-                ),
+                str(value),
                 ha="center",
                 va="center",
-                color=(
-                    "white"
-                    if value > threshold
-                    else "black"
-                ),
+                color=("white" if value > threshold else "black"),
             )
 
     figure.tight_layout()
@@ -323,9 +247,7 @@ def save_confusion_matrix_plot(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
     print(
         "Saved:",
@@ -350,62 +272,30 @@ def save_metrics(
     )
 
     payload = {
-        "model_name": (
-            "FinancialStressTransformer"
-        ),
-        "selected_run": checkpoint.get(
-            "selected_run"
-        ),
-        "selection_metric": checkpoint.get(
-            "selection_metric"
-        ),
-        "selection_tie_breaker": checkpoint.get(
-            "selection_tie_breaker"
-        ),
+        "model_name": ("FinancialStressTransformer"),
+        "selected_run": checkpoint.get("selected_run"),
+        "selection_metric": checkpoint.get("selection_metric"),
+        "selection_tie_breaker": checkpoint.get("selection_tie_breaker"),
         "test_samples": sample_count,
         "transformer_metrics": transformer_metrics,
         "majority_baseline": {
-            "source": (
-                "training_set_majority_class"
-            ),
+            "source": ("training_set_majority_class"),
             "class_id": majority_class,
-            "class_name": CLASS_NAMES[
-                majority_class
-            ],
+            "class_name": CLASS_NAMES[majority_class],
             "metrics": majority_metrics,
         },
         "classification_report": report,
-        "confusion_matrix": (
-            matrix.tolist()
-        ),
+        "confusion_matrix": (matrix.tolist()),
         "hyperparameters": {
-            "model_dimension": checkpoint[
-                "model_dimension"
-            ],
-            "num_heads": checkpoint[
-                "num_heads"
-            ],
-            "feed_forward_size": checkpoint[
-                "feed_forward_size"
-            ],
-            "num_layers": checkpoint[
-                "num_layers"
-            ],
-            "classifier_hidden_size": checkpoint[
-                "classifier_hidden_size"
-            ],
-            "dropout": checkpoint[
-                "dropout"
-            ],
-            "learning_rate": checkpoint[
-                "learning_rate"
-            ],
-            "batch_size": checkpoint[
-                "batch_size"
-            ],
-            "best_epoch": checkpoint[
-                "best_epoch"
-            ],
+            "model_dimension": checkpoint["model_dimension"],
+            "num_heads": checkpoint["num_heads"],
+            "feed_forward_size": checkpoint["feed_forward_size"],
+            "num_layers": checkpoint["num_layers"],
+            "classifier_hidden_size": checkpoint["classifier_hidden_size"],
+            "dropout": checkpoint["dropout"],
+            "learning_rate": checkpoint["learning_rate"],
+            "batch_size": checkpoint["batch_size"],
+            "best_epoch": checkpoint["best_epoch"],
         },
     }
 
@@ -428,11 +318,9 @@ def main() -> None:
 
     prepared_data = prepare_ofr_data()
 
-    _, _, test_loader = (
-        create_data_loaders(
-            prepared_data,
-            batch_size=64,
-        )
+    _, _, test_loader = create_data_loaders(
+        prepared_data,
+        batch_size=64,
     )
 
     device = select_device()
@@ -448,31 +336,21 @@ def main() -> None:
         device=device,
     )
 
-    majority_class = (
-        determine_training_majority_class(
-            prepared_data.y_train
-        )
+    majority_class = determine_training_majority_class(prepared_data.y_train)
+
+    majority_predictions = create_majority_baseline(
+        targets=targets,
+        majority_class=majority_class,
     )
 
-    majority_predictions = (
-        create_majority_baseline(
-            targets=targets,
-            majority_class=majority_class,
-        )
+    transformer_metrics = calculate_metrics(
+        targets,
+        predictions,
     )
 
-    transformer_metrics = (
-        calculate_metrics(
-            targets,
-            predictions,
-        )
-    )
-
-    majority_metrics = (
-        calculate_metrics(
-            targets,
-            majority_predictions,
-        )
+    majority_metrics = calculate_metrics(
+        targets,
+        majority_predictions,
     )
 
     report = classification_report(
@@ -494,9 +372,7 @@ def main() -> None:
     )
 
     print()
-    print(
-        "=== TRANSFORMER TEST EVALUATION ==="
-    )
+    print("=== TRANSFORMER TEST EVALUATION ===")
 
     print(
         "Device:",
@@ -505,30 +381,22 @@ def main() -> None:
 
     print(
         "Test samples:",
-        len(
-            targets
-        ),
+        len(targets),
     )
 
     print(
         "Selected run:",
-        checkpoint.get(
-            "selected_run"
-        ),
+        checkpoint.get("selected_run"),
     )
 
     print()
 
-    print(
-        "Transformer:"
-    )
+    print("Transformer:")
 
     print(
         "Accuracy:",
         round(
-            transformer_metrics[
-                "accuracy"
-            ],
+            transformer_metrics["accuracy"],
             4,
         ),
     )
@@ -536,9 +404,7 @@ def main() -> None:
     print(
         "Macro Precision:",
         round(
-            transformer_metrics[
-                "macro_precision"
-            ],
+            transformer_metrics["macro_precision"],
             4,
         ),
     )
@@ -546,9 +412,7 @@ def main() -> None:
     print(
         "Macro Recall:",
         round(
-            transformer_metrics[
-                "macro_recall"
-            ],
+            transformer_metrics["macro_recall"],
             4,
         ),
     )
@@ -556,34 +420,26 @@ def main() -> None:
     print(
         "Macro F1:",
         round(
-            transformer_metrics[
-                "macro_f1"
-            ],
+            transformer_metrics["macro_f1"],
             4,
         ),
     )
 
     print()
 
-    print(
-        "Training-set majority baseline:"
-    )
+    print("Training-set majority baseline:")
 
     print(
         "Majority class:",
         majority_class,
         "-",
-        CLASS_NAMES[
-            majority_class
-        ],
+        CLASS_NAMES[majority_class],
     )
 
     print(
         "Accuracy:",
         round(
-            majority_metrics[
-                "accuracy"
-            ],
+            majority_metrics["accuracy"],
             4,
         ),
     )
@@ -591,9 +447,7 @@ def main() -> None:
     print(
         "Macro Precision:",
         round(
-            majority_metrics[
-                "macro_precision"
-            ],
+            majority_metrics["macro_precision"],
             4,
         ),
     )
@@ -601,9 +455,7 @@ def main() -> None:
     print(
         "Macro Recall:",
         round(
-            majority_metrics[
-                "macro_recall"
-            ],
+            majority_metrics["macro_recall"],
             4,
         ),
     )
@@ -611,34 +463,22 @@ def main() -> None:
     print(
         "Macro F1:",
         round(
-            majority_metrics[
-                "macro_f1"
-            ],
+            majority_metrics["macro_f1"],
             4,
         ),
     )
 
     print()
 
-    print(
-        "=== CLASSIFICATION REPORT ==="
-    )
+    print("=== CLASSIFICATION REPORT ===")
 
-    print(
-        report
-    )
+    print(report)
 
-    print(
-        "=== CONFUSION MATRIX ==="
-    )
+    print("=== CONFUSION MATRIX ===")
 
-    print(
-        matrix
-    )
+    print(matrix)
 
-    save_confusion_matrix_plot(
-        matrix
-    )
+    save_confusion_matrix_plot(matrix)
 
     save_metrics(
         checkpoint=checkpoint,
@@ -647,16 +487,12 @@ def main() -> None:
         majority_class=majority_class,
         report=report,
         matrix=matrix,
-        sample_count=len(
-            targets
-        ),
+        sample_count=len(targets),
     )
 
     print()
 
-    print(
-        "Evaluation completed."
-    )
+    print("Evaluation completed.")
 
 
 if __name__ == "__main__":

@@ -29,7 +29,6 @@ from sklearn.preprocessing import StandardScaler
 
 from deep_learning_critical_systems.data.load_ofr_fsi import load_ofr_fsi
 
-
 # ---------------------------------------------------------------------
 # Project configuration
 # ---------------------------------------------------------------------
@@ -115,9 +114,7 @@ def clean_raw_data(data: pd.DataFrame) -> pd.DataFrame:
     ]
 
     missing_columns = [
-        column
-        for column in required_columns
-        if column not in data.columns
+        column for column in required_columns if column not in data.columns
     ]
 
     if missing_columns:
@@ -131,21 +128,13 @@ def clean_raw_data(data: pd.DataFrame) -> pd.DataFrame:
         errors="raise",
     )
 
-    data = (
-        data
-        .sort_values(DATE_COLUMN)
-        .reset_index(drop=True)
-    )
+    data = data.sort_values(DATE_COLUMN).reset_index(drop=True)
 
     if data[DATE_COLUMN].duplicated().any():
-        raise ValueError(
-            "Duplicate dates were found in the OFR dataset."
-        )
+        raise ValueError("Duplicate dates were found in the OFR dataset.")
 
     if data[required_columns].isna().any().any():
-        raise ValueError(
-            "Missing values were found in the required OFR columns."
-        )
+        raise ValueError("Missing values were found in the required OFR columns.")
 
     return data[required_columns]
 
@@ -156,17 +145,9 @@ def select_analysis_snapshot(
 ) -> pd.DataFrame:
     """Freeze the dataset at the project's documented analysis end date."""
 
-    cutoff = pd.Timestamp(
-        analysis_end
-    )
+    cutoff = pd.Timestamp(analysis_end)
 
-    snapshot = (
-        data.loc[
-            data[DATE_COLUMN] <= cutoff
-        ]
-        .copy()
-        .reset_index(drop=True)
-    )
+    snapshot = data.loc[data[DATE_COLUMN] <= cutoff].copy().reset_index(drop=True)
 
     if snapshot.empty:
         raise ValueError(
@@ -206,9 +187,7 @@ def calculate_snapshot_sha256(
         float_format="%.15g",
     )
 
-    return hashlib.sha256(
-        canonical_csv.encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(canonical_csv.encode("utf-8")).hexdigest()
 
 
 def verify_reference_snapshot(
@@ -225,9 +204,7 @@ def verify_reference_snapshot(
             f"expected {expected_rows}, received {len(data)}."
         )
 
-    snapshot_sha256 = calculate_snapshot_sha256(
-        data
-    )
+    snapshot_sha256 = calculate_snapshot_sha256(data)
 
     if snapshot_sha256 != expected_sha256:
         raise ValueError(
@@ -249,33 +226,22 @@ def split_chronologically(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Split the dataset into chronological train, validation and test sets."""
 
-    train = data.loc[
-        data[DATE_COLUMN] <= TRAIN_END
-    ].copy()
+    train = data.loc[data[DATE_COLUMN] <= TRAIN_END].copy()
 
     validation = data.loc[
-        (data[DATE_COLUMN] > TRAIN_END)
-        & (data[DATE_COLUMN] <= VALIDATION_END)
+        (data[DATE_COLUMN] > TRAIN_END) & (data[DATE_COLUMN] <= VALIDATION_END)
     ].copy()
 
-    test = data.loc[
-        data[DATE_COLUMN] > VALIDATION_END
-    ].copy()
+    test = data.loc[data[DATE_COLUMN] > VALIDATION_END].copy()
 
     if train.empty:
-        raise ValueError(
-            "Training split is empty."
-        )
+        raise ValueError("Training split is empty.")
 
     if validation.empty:
-        raise ValueError(
-            "Validation split is empty."
-        )
+        raise ValueError("Validation split is empty.")
 
     if test.empty:
-        raise ValueError(
-            "Test split is empty."
-        )
+        raise ValueError("Test split is empty.")
 
     return train, validation, test
 
@@ -327,10 +293,7 @@ def add_future_stress_change(
         skipna=False,
     )
 
-    split[FUTURE_CHANGE_COLUMN] = (
-        future_mean
-        - split["OFR FSI"]
-    )
+    split[FUTURE_CHANGE_COLUMN] = future_mean - split["OFR FSI"]
 
     return split
 
@@ -340,27 +303,16 @@ def calculate_training_thresholds(
 ) -> tuple[float, float]:
     """Learn class boundaries exclusively from training targets."""
 
-    training_changes = train[
-        FUTURE_CHANGE_COLUMN
-    ].dropna()
+    training_changes = train[FUTURE_CHANGE_COLUMN].dropna()
 
     if training_changes.empty:
         raise ValueError(
-            "No valid future stress changes are available "
-            "in the training data."
+            "No valid future stress changes are available in the training data."
         )
 
-    low_threshold = float(
-        training_changes.quantile(
-            1 / 3
-        )
-    )
+    low_threshold = float(training_changes.quantile(1 / 3))
 
-    high_threshold = float(
-        training_changes.quantile(
-            2 / 3
-        )
-    )
+    high_threshold = float(training_changes.quantile(2 / 3))
 
     return (
         low_threshold,
@@ -390,53 +342,25 @@ def add_target_classes(
         dtype="Int64",
     )
 
-    valid_mask = split[
-        FUTURE_CHANGE_COLUMN
-    ].notna()
+    valid_mask = split[FUTURE_CHANGE_COLUMN].notna()
 
-    decrease_mask = (
-        valid_mask
-        & (
-            split[FUTURE_CHANGE_COLUMN]
-            <= low_threshold
-        )
-    )
+    decrease_mask = valid_mask & (split[FUTURE_CHANGE_COLUMN] <= low_threshold)
 
     stable_mask = (
         valid_mask
-        & (
-            split[FUTURE_CHANGE_COLUMN]
-            > low_threshold
-        )
-        & (
-            split[FUTURE_CHANGE_COLUMN]
-            < high_threshold
-        )
+        & (split[FUTURE_CHANGE_COLUMN] > low_threshold)
+        & (split[FUTURE_CHANGE_COLUMN] < high_threshold)
     )
 
-    increase_mask = (
-        valid_mask
-        & (
-            split[FUTURE_CHANGE_COLUMN]
-            >= high_threshold
-        )
-    )
+    increase_mask = valid_mask & (split[FUTURE_CHANGE_COLUMN] >= high_threshold)
 
-    target.loc[
-        decrease_mask
-    ] = 0
+    target.loc[decrease_mask] = 0
 
-    target.loc[
-        stable_mask
-    ] = 1
+    target.loc[stable_mask] = 1
 
-    target.loc[
-        increase_mask
-    ] = 2
+    target.loc[increase_mask] = 2
 
-    split[
-        TARGET_COLUMN
-    ] = target
+    split[TARGET_COLUMN] = target
 
     return split
 
@@ -453,11 +377,7 @@ def fit_scaler(
 
     scaler = StandardScaler()
 
-    scaler.fit(
-        train[
-            FEATURE_COLUMNS
-        ]
-    )
+    scaler.fit(train[FEATURE_COLUMNS])
 
     return scaler
 
@@ -468,11 +388,7 @@ def transform_features(
 ) -> np.ndarray:
     """Apply an already fitted scaler to feature columns."""
 
-    return scaler.transform(
-        data[
-            FEATURE_COLUMNS
-        ]
-    )
+    return scaler.transform(data[FEATURE_COLUMNS])
 
 
 def scale_features(
@@ -487,9 +403,7 @@ def scale_features(
 ]:
     """Standardize all features without validation/test leakage."""
 
-    scaler = fit_scaler(
-        train
-    )
+    scaler = fit_scaler(train)
 
     train_scaled = transform_features(
         train,
@@ -544,59 +458,28 @@ def create_sequences(
     y = []
     sample_dates = []
 
-    target_values = (
-        targets
-        .reset_index(drop=True)
-        .to_numpy()
-    )
+    target_values = targets.reset_index(drop=True).to_numpy()
 
-    date_values = (
-        dates
-        .reset_index(drop=True)
-        .to_numpy()
-    )
+    date_values = dates.reset_index(drop=True).to_numpy()
 
     for end_index in range(
         window_size - 1,
         len(features),
     ):
-        target_value = (
-            target_values[
-                end_index
-            ]
-        )
+        target_value = target_values[end_index]
 
-        if pd.isna(
-            target_value
-        ):
+        if pd.isna(target_value):
             continue
 
-        start_index = (
-            end_index
-            - window_size
-            + 1
-        )
+        start_index = end_index - window_size + 1
 
-        window = features[
-            start_index:
-            end_index + 1
-        ]
+        window = features[start_index : end_index + 1]
 
-        X.append(
-            window
-        )
+        X.append(window)
 
-        y.append(
-            int(
-                target_value
-            )
-        )
+        y.append(int(target_value))
 
-        sample_dates.append(
-            date_values[
-                end_index
-            ]
-        )
+        sample_dates.append(date_values[end_index])
 
     return (
         np.asarray(
@@ -639,21 +522,13 @@ def create_sequences_with_history(
     observations after 2020-01-02.
     """
 
-    if len(
-        historical_features
-    ) < (
-        window_size - 1
-    ):
+    if len(historical_features) < (window_size - 1):
         raise ValueError(
             "Not enough historical observations are available "
             "to build the requested window."
         )
 
-    history = historical_features[
-        -(
-            window_size - 1
-        ):
-    ]
+    history = historical_features[-(window_size - 1) :]
 
     combined_features = np.concatenate(
         [
@@ -663,80 +538,36 @@ def create_sequences_with_history(
         axis=0,
     )
 
-    target_values = (
-        current_targets
-        .reset_index(drop=True)
-        .to_numpy()
-    )
+    target_values = current_targets.reset_index(drop=True).to_numpy()
 
-    date_values = (
-        current_dates
-        .reset_index(drop=True)
-        .to_numpy()
-    )
+    date_values = current_dates.reset_index(drop=True).to_numpy()
 
     X = []
     y = []
     sample_dates = []
 
-    history_length = len(
-        history
-    )
+    history_length = len(history)
 
-    for current_index in range(
-        len(
-            current_features
-        )
-    ):
-        target_value = (
-            target_values[
-                current_index
-            ]
-        )
+    for current_index in range(len(current_features)):
+        target_value = target_values[current_index]
 
-        if pd.isna(
-            target_value
-        ):
+        if pd.isna(target_value):
             continue
 
-        end_index = (
-            history_length
-            + current_index
-        )
+        end_index = history_length + current_index
 
-        start_index = (
-            end_index
-            - window_size
-            + 1
-        )
+        start_index = end_index - window_size + 1
 
-        window = combined_features[
-            start_index:
-            end_index + 1
-        ]
+        window = combined_features[start_index : end_index + 1]
 
-        if len(
-            window
-        ) != window_size:
-            raise ValueError(
-                "A generated sequence has an invalid window length."
-            )
+        if len(window) != window_size:
+            raise ValueError("A generated sequence has an invalid window length.")
 
-        X.append(
-            window
-        )
+        X.append(window)
 
-        y.append(
-            int(
-                target_value
-            )
-        )
+        y.append(int(target_value))
 
-        sample_dates.append(
-            date_values[
-                current_index
-            ]
-        )
+        sample_dates.append(date_values[current_index])
 
     return (
         np.asarray(
@@ -764,57 +595,39 @@ def prepare_ofr_data(
 ) -> PreparedOFRData:
     """Run the complete leakage-safe preprocessing pipeline."""
 
-    raw_data = (
-        load_ofr_fsi()
-    )
+    raw_data = load_ofr_fsi()
 
-    data = clean_raw_data(
-        raw_data
-    )
+    data = clean_raw_data(raw_data)
 
-    data = select_analysis_snapshot(
-        data
-    )
+    data = select_analysis_snapshot(data)
 
-    verify_reference_snapshot(
-        data
-    )
+    verify_reference_snapshot(data)
 
     (
         train,
         validation,
         test,
-    ) = split_chronologically(
-        data
+    ) = split_chronologically(data)
+
+    train = add_future_stress_change(
+        train,
+        horizon=forecast_horizon,
     )
 
-    train = (
-        add_future_stress_change(
-            train,
-            horizon=forecast_horizon,
-        )
+    validation = add_future_stress_change(
+        validation,
+        horizon=forecast_horizon,
     )
 
-    validation = (
-        add_future_stress_change(
-            validation,
-            horizon=forecast_horizon,
-        )
-    )
-
-    test = (
-        add_future_stress_change(
-            test,
-            horizon=forecast_horizon,
-        )
+    test = add_future_stress_change(
+        test,
+        horizon=forecast_horizon,
     )
 
     (
         low_threshold,
         high_threshold,
-    ) = calculate_training_thresholds(
-        train
-    )
+    ) = calculate_training_thresholds(train)
 
     train = add_target_classes(
         train,
@@ -852,12 +665,8 @@ def prepare_ofr_data(
         dates_train,
     ) = create_sequences(
         train_scaled,
-        train[
-            TARGET_COLUMN
-        ],
-        train[
-            DATE_COLUMN
-        ],
+        train[TARGET_COLUMN],
+        train[DATE_COLUMN],
         window_size,
     )
 
@@ -870,12 +679,8 @@ def prepare_ofr_data(
     ) = create_sequences_with_history(
         historical_features=train_scaled,
         current_features=validation_scaled,
-        current_targets=validation[
-            TARGET_COLUMN
-        ],
-        current_dates=validation[
-            DATE_COLUMN
-        ],
+        current_targets=validation[TARGET_COLUMN],
+        current_dates=validation[DATE_COLUMN],
         window_size=window_size,
     )
 
@@ -888,12 +693,8 @@ def prepare_ofr_data(
     ) = create_sequences_with_history(
         historical_features=validation_scaled,
         current_features=test_scaled,
-        current_targets=test[
-            TARGET_COLUMN
-        ],
-        current_dates=test[
-            DATE_COLUMN
-        ],
+        current_targets=test[TARGET_COLUMN],
+        current_dates=test[DATE_COLUMN],
         window_size=window_size,
     )
 
@@ -901,27 +702,15 @@ def prepare_ofr_data(
         X_train=X_train,
         y_train=y_train,
         dates_train=dates_train,
-
         X_validation=X_validation,
         y_validation=y_validation,
         dates_validation=dates_validation,
-
         X_test=X_test,
         y_test=y_test,
         dates_test=dates_test,
-
-        feature_names=(
-            FEATURE_COLUMNS.copy()
-        ),
-
-        low_threshold=(
-            low_threshold
-        ),
-
-        high_threshold=(
-            high_threshold
-        ),
-
+        feature_names=(FEATURE_COLUMNS.copy()),
+        low_threshold=(low_threshold),
+        high_threshold=(high_threshold),
         scaler=scaler,
     )
 
@@ -937,37 +726,21 @@ def print_summary(
     """Print the most important preprocessing results."""
 
     print()
-    print(
-        "=== PREPARED DATA ==="
-    )
+    print("=== PREPARED DATA ===")
 
     print()
-    print(
-        "Feature count:"
-    )
+    print("Feature count:")
 
-    print(
-        len(
-            prepared.feature_names
-        )
-    )
+    print(len(prepared.feature_names))
 
     print()
-    print(
-        "Features:"
-    )
+    print("Features:")
 
-    for feature in (
-        prepared.feature_names
-    ):
-        print(
-            f"- {feature}"
-        )
+    for feature in prepared.feature_names:
+        print(f"- {feature}")
 
     print()
-    print(
-        "Training thresholds:"
-    )
+    print("Training thresholds:")
 
     print(
         "Stress Decrease / Stable:",
@@ -986,9 +759,7 @@ def print_summary(
     )
 
     print()
-    print(
-        "Reference analysis snapshot:"
-    )
+    print("Reference analysis snapshot:")
 
     print(
         "Analysis end:",
@@ -1006,9 +777,7 @@ def print_summary(
     )
 
     print()
-    print(
-        "Sequence shapes:"
-    )
+    print("Sequence shapes:")
 
     print(
         "Train:",
@@ -1029,9 +798,7 @@ def print_summary(
     )
 
     print()
-    print(
-        "Class distribution:"
-    )
+    print("Class distribution:")
 
     for (
         split_name,
@@ -1052,9 +819,7 @@ def print_summary(
     ]:
         counts = np.bincount(
             labels,
-            minlength=len(
-                CLASS_NAMES
-            ),
+            minlength=len(CLASS_NAMES),
         )
 
         print(
@@ -1063,9 +828,7 @@ def print_summary(
         )
 
     print()
-    print(
-        "First and last prediction dates:"
-    )
+    print("First and last prediction dates:")
 
     print(
         "Train:",
@@ -1090,10 +853,6 @@ def print_summary(
 
 
 if __name__ == "__main__":
-    prepared_data = (
-        prepare_ofr_data()
-    )
+    prepared_data = prepare_ofr_data()
 
-    print_summary(
-        prepared_data
-    )
+    print_summary(prepared_data)

@@ -47,39 +47,25 @@ def create_prepared_test_data() -> PreparedOFRData:
         dtype=np.int64,
     )
 
-    dates_train = np.arange(
-        len(X_train)
-    )
+    dates_train = np.arange(len(X_train))
 
-    dates_validation = np.arange(
-        len(X_validation)
-    )
+    dates_validation = np.arange(len(X_validation))
 
-    dates_test = np.arange(
-        len(X_test)
-    )
+    dates_test = np.arange(len(X_test))
 
     return PreparedOFRData(
         X_train=X_train,
         y_train=y_train,
         dates_train=dates_train,
-
         X_validation=X_validation,
         y_validation=y_validation,
         dates_validation=dates_validation,
-
         X_test=X_test,
         y_test=y_test,
         dates_test=dates_test,
-
-        feature_names=[
-            f"feature_{index}"
-            for index in range(9)
-        ],
-
+        feature_names=[f"feature_{index}" for index in range(9)],
         low_threshold=-0.1,
         high_threshold=0.1,
-
         scaler=None,
     )
 
@@ -221,9 +207,7 @@ def test_data_loaders_create_expected_batches():
         batch_size=4,
     )
 
-    X_batch, y_batch = next(
-        iter(train_loader)
-    )
+    X_batch, y_batch = next(iter(train_loader))
 
     assert X_batch.shape == (
         4,
@@ -231,9 +215,7 @@ def test_data_loaders_create_expected_batches():
         9,
     )
 
-    assert y_batch.shape == (
-        4,
-    )
+    assert y_batch.shape == (4,)
 
     assert len(train_loader) == 3
     assert len(validation_loader) == 2
@@ -245,37 +227,23 @@ def test_data_loader_preserves_sample_order():
 
     prepared_data = create_prepared_test_data()
 
-    for sample_index in range(
-        len(prepared_data.X_train)
-    ):
-        prepared_data.X_train[
-            sample_index
-        ] = sample_index
+    for sample_index in range(len(prepared_data.X_train)):
+        prepared_data.X_train[sample_index] = sample_index
 
     train_loader, _, _ = create_data_loaders(
         prepared_data,
         batch_size=4,
     )
 
-    first_batch, _ = next(
-        iter(train_loader)
-    )
+    first_batch, _ = next(iter(train_loader))
 
-    assert torch.all(
-        first_batch[0] == 0
-    )
+    assert torch.all(first_batch[0] == 0)
 
-    assert torch.all(
-        first_batch[1] == 1
-    )
+    assert torch.all(first_batch[1] == 1)
 
-    assert torch.all(
-        first_batch[2] == 2
-    )
+    assert torch.all(first_batch[2] == 2)
 
-    assert torch.all(
-        first_batch[3] == 3
-    )
+    assert torch.all(first_batch[3] == 3)
 
 
 def test_data_loader_rejects_invalid_batch_size():

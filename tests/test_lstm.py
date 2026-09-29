@@ -20,9 +20,7 @@ def test_lstm_returns_correct_output_shape():
         dtype=torch.float32,
     )
 
-    outputs = model(
-        inputs
-    )
+    outputs = model(inputs)
 
     assert outputs.shape == (
         16,
@@ -42,9 +40,7 @@ def test_lstm_output_is_float_tensor():
         dtype=torch.float32,
     )
 
-    outputs = model(
-        inputs
-    )
+    outputs = model(inputs)
 
     assert outputs.dtype == torch.float32
 
@@ -66,9 +62,7 @@ def test_lstm_supports_different_batch_sizes():
             dtype=torch.float32,
         )
 
-        outputs = model(
-            inputs
-        )
+        outputs = model(inputs)
 
         assert outputs.shape == (
             batch_size,
@@ -93,9 +87,7 @@ def test_lstm_supports_different_sequence_lengths():
             dtype=torch.float32,
         )
 
-        outputs = model(
-            inputs
-        )
+        outputs = model(inputs)
 
         assert outputs.shape == (
             4,
@@ -118,9 +110,7 @@ def test_lstm_rejects_two_dimensional_input():
         ValueError,
         match="batch_size, sequence_length, feature_count",
     ):
-        model(
-            invalid_inputs
-        )
+        model(invalid_inputs)
 
 
 def test_lstm_rejects_wrong_feature_count():
@@ -141,9 +131,7 @@ def test_lstm_rejects_wrong_feature_count():
         ValueError,
         match="feature count",
     ):
-        model(
-            invalid_inputs
-        )
+        model(invalid_inputs)
 
 
 def test_lstm_rejects_invalid_configuration():
@@ -196,9 +184,7 @@ def test_lstm_has_expected_trainable_parameter_count():
     model = FinancialStressLSTM()
 
     parameter_count = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
 
     assert parameter_count == 21379

@@ -35,6 +35,8 @@ from deep_learning_critical_systems.evaluation.evaluate_mlp import (
 )
 from deep_learning_critical_systems.evaluation.evaluate_transformer import (
     CHECKPOINT_PATH as TRANSFORMER_CHECKPOINT_PATH,
+)
+from deep_learning_critical_systems.evaluation.evaluate_transformer import (
     load_model as load_transformer_model,
 )
 from deep_learning_critical_systems.training.trainer import (
@@ -43,25 +45,11 @@ from deep_learning_critical_systems.training.trainer import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-LOG_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-    / "roc_auc_test.json"
-)
+LOG_PATH = PROJECT_ROOT / "artifacts" / "logs" / "roc_auc_test.json"
 
-REPORT_PATH = (
-    PROJECT_ROOT
-    / "reports"
-    / "roc_auc.md"
-)
+REPORT_PATH = PROJECT_ROOT / "reports" / "roc_auc.md"
 
-FIGURE_PATH = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-    / "roc_auc_comparison.png"
-)
+FIGURE_PATH = PROJECT_ROOT / "reports" / "figures" / "roc_auc_comparison.png"
 
 CLASS_NAMES_DE = [
     "Stressrückgang",
@@ -92,29 +80,18 @@ def collect_probabilities(
 
     with torch.no_grad():
         for features, batch_targets in data_loader:
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
             batch_probabilities = torch.softmax(
                 logits,
                 dim=1,
             )
 
-            targets.extend(
-                batch_targets.numpy().tolist()
-            )
+            targets.extend(batch_targets.numpy().tolist())
 
-            probabilities.extend(
-                batch_probabilities
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            probabilities.extend(batch_probabilities.cpu().numpy().tolist())
 
     return (
         np.asarray(
@@ -136,14 +113,8 @@ def calculate_roc_auc(
 
     per_class = {}
 
-    for class_id, class_name in enumerate(
-        CLASS_NAMES_DE
-    ):
-        binary_targets = (
-            targets == class_id
-        ).astype(
-            np.int64
-        )
+    for class_id, class_name in enumerate(CLASS_NAMES_DE):
+        binary_targets = (targets == class_id).astype(np.int64)
 
         class_auc = roc_auc_score(
             binary_targets,
@@ -153,11 +124,7 @@ def calculate_roc_auc(
             ],
         )
 
-        per_class[
-            class_name
-        ] = float(
-            class_auc
-        )
+        per_class[class_name] = float(class_auc)
 
     macro_auc = roc_auc_score(
         targets,
@@ -167,9 +134,7 @@ def calculate_roc_auc(
     )
 
     return {
-        "macro_ovr_roc_auc": float(
-            macro_auc
-        ),
+        "macro_ovr_roc_auc": float(macro_auc),
         "per_class_roc_auc": per_class,
     }
 
@@ -179,16 +144,12 @@ def load_final_models(
 ) -> dict[str, torch.nn.Module]:
     """Lade die drei finalen Modelle."""
 
-    mlp_model = load_mlp_model(
-        device
-    )
+    mlp_model = load_mlp_model(device)
 
     (
         lstm_model,
         _,
-    ) = load_lstm_model(
-        device
-    )
+    ) = load_lstm_model(device)
 
     (
         transformer_model,
@@ -217,12 +178,8 @@ def save_results(
     )
 
     payload = {
-        "analysis": (
-            "ROC-AUC-Auswertung der finalen Testmodelle"
-        ),
-        "method": (
-            "Multi-Class One-vs-Rest ROC-AUC"
-        ),
+        "analysis": ("ROC-AUC-Auswertung der finalen Testmodelle"),
+        "method": ("Multi-Class One-vs-Rest ROC-AUC"),
         "test_samples": sample_count,
         "used_for_model_selection": False,
         "results": results,
@@ -271,13 +228,9 @@ def save_report(
     ]
 
     for model_name in MODEL_ORDER:
-        model_result = results[
-            model_name
-        ]
+        model_result = results[model_name]
 
-        class_result = model_result[
-            "per_class_roc_auc"
-        ]
+        class_result = model_result["per_class_roc_auc"]
 
         lines.append(
             "| "
@@ -317,9 +270,7 @@ def save_report(
     )
 
     REPORT_PATH.write_text(
-        "\n".join(
-            lines
-        ),
+        "\n".join(lines),
         encoding="utf-8",
     )
 
@@ -357,44 +308,25 @@ def save_figure(
         MODEL_ORDER,
         strict=True,
     ):
-        probabilities = probabilities_by_model[
-            model_name
-        ]
+        probabilities = probabilities_by_model[model_name]
 
-        for class_id, class_name in enumerate(
-            CLASS_NAMES_DE
-        ):
-            binary_targets = (
-                targets == class_id
-            ).astype(
-                np.int64
+        for class_id, class_name in enumerate(CLASS_NAMES_DE):
+            binary_targets = (targets == class_id).astype(np.int64)
+
+            false_positive_rate, true_positive_rate, _ = roc_curve(
+                binary_targets,
+                probabilities[
+                    :,
+                    class_id,
+                ],
             )
 
-            false_positive_rate, true_positive_rate, _ = (
-                roc_curve(
-                    binary_targets,
-                    probabilities[
-                        :,
-                        class_id,
-                    ],
-                )
-            )
-
-            class_auc = results[
-                model_name
-            ][
-                "per_class_roc_auc"
-            ][
-                class_name
-            ]
+            class_auc = results[model_name]["per_class_roc_auc"][class_name]
 
             axis.plot(
                 false_positive_rate,
                 true_positive_rate,
-                label=(
-                    f"{class_name} "
-                    f"(AUC {class_auc:.3f})"
-                ),
+                label=(f"{class_name} (AUC {class_auc:.3f})"),
             )
 
         axis.plot(
@@ -411,32 +343,17 @@ def save_figure(
             label="Zufallsniveau",
         )
 
-        macro_auc = results[
-            model_name
-        ][
-            "macro_ovr_roc_auc"
-        ]
+        macro_auc = results[model_name]["macro_ovr_roc_auc"]
 
-        axis.set_title(
-            f"{model_name}\n"
-            f"Macro ROC-AUC: {macro_auc:.3f}"
-        )
+        axis.set_title(f"{model_name}\nMacro ROC-AUC: {macro_auc:.3f}")
 
-        axis.set_xlabel(
-            "Falsch-Positiv-Rate"
-        )
+        axis.set_xlabel("Falsch-Positiv-Rate")
 
-        axis.grid(
-            alpha=0.25
-        )
+        axis.grid(alpha=0.25)
 
-        axis.legend(
-            fontsize=8
-        )
+        axis.legend(fontsize=8)
 
-    axes[0].set_ylabel(
-        "Richtig-Positiv-Rate"
-    )
+    axes[0].set_ylabel("Richtig-Positiv-Rate")
 
     figure.suptitle(
         "ROC-AUC der finalen Modelle auf dem Testdatensatz",
@@ -451,9 +368,7 @@ def save_figure(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
     print(
         "Gespeichert:",
@@ -467,28 +382,18 @@ def print_results(
     """Gib die ROC-AUC-Ergebnisse kompakt aus."""
 
     print()
-    print(
-        "=== ROC-AUC-AUSWERTUNG ==="
-    )
+    print("=== ROC-AUC-AUSWERTUNG ===")
 
     print()
 
-    print(
-        "Modell      | Macro AUC | Rückgang | Stabil | Anstieg"
-    )
+    print("Modell      | Macro AUC | Rückgang | Stabil | Anstieg")
 
-    print(
-        "-" * 62
-    )
+    print("-" * 62)
 
     for model_name in MODEL_ORDER:
-        model_result = results[
-            model_name
-        ]
+        model_result = results[model_name]
 
-        class_result = model_result[
-            "per_class_roc_auc"
-        ]
+        class_result = model_result["per_class_roc_auc"]
 
         print(
             f"{model_name:<11} | "
@@ -516,9 +421,7 @@ def main() -> None:
     device = select_device()
 
     print()
-    print(
-        "=== ROC-AUC-ANALYSE DER FINALEN MODELLE ==="
-    )
+    print("=== ROC-AUC-ANALYSE DER FINALEN MODELLE ===")
 
     print(
         "Gerät:",
@@ -527,22 +430,14 @@ def main() -> None:
 
     print(
         "Testfälle:",
-        len(
-            prepared_data.y_test
-        ),
+        len(prepared_data.y_test),
     )
 
-    print(
-        "Weitere Modellauswahl: NEIN"
-    )
+    print("Weitere Modellauswahl: NEIN")
 
-    print(
-        "Weitere Hyperparameter-Optimierung: NEIN"
-    )
+    print("Weitere Hyperparameter-Optimierung: NEIN")
 
-    models = load_final_models(
-        device
-    )
+    models = load_final_models(device)
 
     common_targets = None
     probabilities_by_model = {}
@@ -553,9 +448,7 @@ def main() -> None:
             targets,
             probabilities,
         ) = collect_probabilities(
-            model=models[
-                model_name
-            ],
+            model=models[model_name],
             data_loader=test_loader,
             device=device,
         )
@@ -566,42 +459,28 @@ def main() -> None:
             common_targets,
             targets,
         ):
-            raise RuntimeError(
-                "Die Testziele der Modelle stimmen nicht überein."
-            )
+            raise RuntimeError("Die Testziele der Modelle stimmen nicht überein.")
 
-        probabilities_by_model[
-            model_name
-        ] = probabilities
+        probabilities_by_model[model_name] = probabilities
 
-        results[
-            model_name
-        ] = calculate_roc_auc(
+        results[model_name] = calculate_roc_auc(
             targets,
             probabilities,
         )
 
     if common_targets is None:
-        raise RuntimeError(
-            "Es wurden keine Testvorhersagen erzeugt."
-        )
+        raise RuntimeError("Es wurden keine Testvorhersagen erzeugt.")
 
-    print_results(
-        results
-    )
+    print_results(results)
 
     save_results(
         results=results,
-        sample_count=len(
-            common_targets
-        ),
+        sample_count=len(common_targets),
     )
 
     save_report(
         results=results,
-        sample_count=len(
-            common_targets
-        ),
+        sample_count=len(common_targets),
     )
 
     save_figure(
@@ -611,9 +490,7 @@ def main() -> None:
     )
 
     print()
-    print(
-        "ROC-AUC-Auswertung abgeschlossen."
-    )
+    print("ROC-AUC-Auswertung abgeschlossen.")
 
 
 if __name__ == "__main__":

@@ -35,14 +35,9 @@ from deep_learning_critical_systems.data.prepare_ofr_fsi import (
     split_chronologically,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-FIGURES_DIR = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-)
+FIGURES_DIR = PROJECT_ROOT / "reports" / "figures"
 
 
 def prepare_eda_data() -> tuple[
@@ -57,36 +52,24 @@ def prepare_eda_data() -> tuple[
 
     raw_data = load_ofr_fsi()
 
-    data = clean_raw_data(
-        raw_data
-    )
+    data = clean_raw_data(raw_data)
 
     (
         train,
         validation,
         test,
-    ) = split_chronologically(
-        data
-    )
+    ) = split_chronologically(data)
 
-    train = add_future_stress_change(
-        train
-    )
+    train = add_future_stress_change(train)
 
-    validation = add_future_stress_change(
-        validation
-    )
+    validation = add_future_stress_change(validation)
 
-    test = add_future_stress_change(
-        test
-    )
+    test = add_future_stress_change(test)
 
     (
         low_threshold,
         high_threshold,
-    ) = calculate_training_thresholds(
-        train
-    )
+    ) = calculate_training_thresholds(train)
 
     train = add_target_classes(
         train,
@@ -121,9 +104,7 @@ def plot_financial_stress_over_time(
 ) -> None:
     """Plot the complete OFR Financial Stress Index time series."""
 
-    figure, axis = plt.subplots(
-        figsize=(14, 6)
-    )
+    figure, axis = plt.subplots(figsize=(14, 6))
 
     axis.plot(
         data["Date"],
@@ -151,30 +132,19 @@ def plot_financial_stress_over_time(
         label="End of validation period",
     )
 
-    axis.set_title(
-        "OFR Financial Stress Index over Time"
-    )
+    axis.set_title("OFR Financial Stress Index over Time")
 
-    axis.set_xlabel(
-        "Date"
-    )
+    axis.set_xlabel("Date")
 
-    axis.set_ylabel(
-        "OFR FSI"
-    )
+    axis.set_ylabel("OFR FSI")
 
     axis.legend()
 
-    axis.grid(
-        alpha=0.3
-    )
+    axis.grid(alpha=0.3)
 
     figure.tight_layout()
 
-    output_path = (
-        FIGURES_DIR
-        / "ofr_fsi_over_time.png"
-    )
+    output_path = FIGURES_DIR / "ofr_fsi_over_time.png"
 
     figure.savefig(
         output_path,
@@ -182,13 +152,9 @@ def plot_financial_stress_over_time(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
-    print(
-        f"Saved: {output_path}"
-    )
+    print(f"Saved: {output_path}")
 
 
 def plot_feature_correlations(
@@ -196,16 +162,9 @@ def plot_feature_correlations(
 ) -> None:
     """Plot feature correlations using training observations only."""
 
-    correlations = (
-        train[
-            FEATURE_COLUMNS
-        ]
-        .corr()
-    )
+    correlations = train[FEATURE_COLUMNS].corr()
 
-    figure, axis = plt.subplots(
-        figsize=(11, 9)
-    )
+    figure, axis = plt.subplots(figsize=(11, 9))
 
     image = axis.imshow(
         correlations,
@@ -214,17 +173,9 @@ def plot_feature_correlations(
         cmap="coolwarm",
     )
 
-    axis.set_xticks(
-        np.arange(
-            len(FEATURE_COLUMNS)
-        )
-    )
+    axis.set_xticks(np.arange(len(FEATURE_COLUMNS)))
 
-    axis.set_yticks(
-        np.arange(
-            len(FEATURE_COLUMNS)
-        )
-    )
+    axis.set_yticks(np.arange(len(FEATURE_COLUMNS)))
 
     axis.set_xticklabels(
         FEATURE_COLUMNS,
@@ -232,16 +183,10 @@ def plot_feature_correlations(
         ha="right",
     )
 
-    axis.set_yticklabels(
-        FEATURE_COLUMNS
-    )
+    axis.set_yticklabels(FEATURE_COLUMNS)
 
-    for row in range(
-        len(FEATURE_COLUMNS)
-    ):
-        for column in range(
-            len(FEATURE_COLUMNS)
-        ):
+    for row in range(len(FEATURE_COLUMNS)):
+        for column in range(len(FEATURE_COLUMNS)):
             axis.text(
                 column,
                 row,
@@ -257,16 +202,11 @@ def plot_feature_correlations(
         label="Correlation",
     )
 
-    axis.set_title(
-        "Training-Period Feature Correlations"
-    )
+    axis.set_title("Training-Period Feature Correlations")
 
     figure.tight_layout()
 
-    output_path = (
-        FIGURES_DIR
-        / "feature_correlation_matrix.png"
-    )
+    output_path = FIGURES_DIR / "feature_correlation_matrix.png"
 
     figure.savefig(
         output_path,
@@ -274,13 +214,9 @@ def plot_feature_correlations(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
-    print(
-        f"Saved: {output_path}"
-    )
+    print(f"Saved: {output_path}")
 
 
 def plot_future_change_distribution(
@@ -290,16 +226,9 @@ def plot_future_change_distribution(
 ) -> None:
     """Plot the distribution used to define the target classes."""
 
-    valid_changes = (
-        train[
-            FUTURE_CHANGE_COLUMN
-        ]
-        .dropna()
-    )
+    valid_changes = train[FUTURE_CHANGE_COLUMN].dropna()
 
-    figure, axis = plt.subplots(
-        figsize=(12, 6)
-    )
+    figure, axis = plt.subplots(figsize=(12, 6))
 
     axis.hist(
         valid_changes,
@@ -312,46 +241,29 @@ def plot_future_change_distribution(
         low_threshold,
         linestyle="--",
         linewidth=1.5,
-        label=(
-            "Decrease / Stable threshold "
-            f"({low_threshold:.3f})"
-        ),
+        label=(f"Decrease / Stable threshold ({low_threshold:.3f})"),
     )
 
     axis.axvline(
         high_threshold,
         linestyle="--",
         linewidth=1.5,
-        label=(
-            "Stable / Increase threshold "
-            f"({high_threshold:.3f})"
-        ),
+        label=(f"Stable / Increase threshold ({high_threshold:.3f})"),
     )
 
-    axis.set_title(
-        "Training Distribution of Five-Day Future Stress Change"
-    )
+    axis.set_title("Training Distribution of Five-Day Future Stress Change")
 
-    axis.set_xlabel(
-        "Future mean OFR FSI minus current OFR FSI"
-    )
+    axis.set_xlabel("Future mean OFR FSI minus current OFR FSI")
 
-    axis.set_ylabel(
-        "Number of observations"
-    )
+    axis.set_ylabel("Number of observations")
 
     axis.legend()
 
-    axis.grid(
-        alpha=0.3
-    )
+    axis.grid(alpha=0.3)
 
     figure.tight_layout()
 
-    output_path = (
-        FIGURES_DIR
-        / "future_stress_change_distribution.png"
-    )
+    output_path = FIGURES_DIR / "future_stress_change_distribution.png"
 
     figure.savefig(
         output_path,
@@ -359,13 +271,9 @@ def plot_future_change_distribution(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
-    print(
-        f"Saved: {output_path}"
-    )
+    print(f"Saved: {output_path}")
 
 
 def plot_class_distribution(
@@ -383,71 +291,45 @@ def plot_class_distribution(
 
     class_counts = []
 
-    for split_name, split in split_data.items():
+    for split in split_data.values():
         counts = (
-            split[
-                TARGET_COLUMN
-            ]
+            split[TARGET_COLUMN]
             .dropna()
             .astype(int)
             .value_counts()
             .reindex(
-                range(
-                    len(CLASS_NAMES)
-                ),
+                range(len(CLASS_NAMES)),
                 fill_value=0,
             )
         )
 
-        class_counts.append(
-            counts.to_numpy()
-        )
+        class_counts.append(counts.to_numpy())
 
-    values = np.asarray(
-        class_counts
-    )
+    values = np.asarray(class_counts)
 
-    x_positions = np.arange(
-        len(CLASS_NAMES)
-    )
+    x_positions = np.arange(len(CLASS_NAMES))
 
     bar_width = 0.25
 
-    figure, axis = plt.subplots(
-        figsize=(11, 6)
-    )
+    figure, axis = plt.subplots(figsize=(11, 6))
 
-    for split_index, split_name in enumerate(
-        split_data
-    ):
+    for split_index, split_name in enumerate(split_data):
         axis.bar(
-            x_positions
-            + split_index * bar_width,
+            x_positions + split_index * bar_width,
             values[split_index],
             width=bar_width,
             label=split_name,
         )
 
-    axis.set_xticks(
-        x_positions
-        + bar_width
-    )
+    axis.set_xticks(x_positions + bar_width)
 
-    axis.set_xticklabels(
-        CLASS_NAMES
-    )
+    axis.set_xticklabels(CLASS_NAMES)
 
-    axis.set_title(
-        "Target Class Distribution by Data Split"
-    )
+    axis.set_title("Target Class Distribution by Data Split")
 
-    axis.set_xlabel(
-        "Target class"
-    )
+    axis.set_xlabel("Target class")
 
-    axis.set_ylabel(
-        "Number of observations"
-    )
+    axis.set_ylabel("Number of observations")
 
     axis.legend()
 
@@ -458,10 +340,7 @@ def plot_class_distribution(
 
     figure.tight_layout()
 
-    output_path = (
-        FIGURES_DIR
-        / "class_distribution_by_split.png"
-    )
+    output_path = FIGURES_DIR / "class_distribution_by_split.png"
 
     figure.savefig(
         output_path,
@@ -469,13 +348,9 @@ def plot_class_distribution(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
-    print(
-        f"Saved: {output_path}"
-    )
+    print(f"Saved: {output_path}")
 
 
 def print_numerical_summary(
@@ -489,14 +364,10 @@ def print_numerical_summary(
     """Print the key numerical findings of the exploratory analysis."""
 
     print()
-    print(
-        "=== EDA SUMMARY ==="
-    )
+    print("=== EDA SUMMARY ===")
 
     print()
-    print(
-        "Dataset:"
-    )
+    print("Dataset:")
 
     print(
         "Rows:",
@@ -516,20 +387,12 @@ def print_numerical_summary(
     )
 
     print()
-    print(
-        "OFR FSI summary:"
-    )
+    print("OFR FSI summary:")
 
-    print(
-        data["OFR FSI"]
-        .describe()
-        .round(3)
-    )
+    print(data["OFR FSI"].describe().round(3))
 
     print()
-    print(
-        "Training target thresholds:"
-    )
+    print("Training target thresholds:")
 
     print(
         "Decrease / Stable:",
@@ -548,9 +411,7 @@ def print_numerical_summary(
     )
 
     print()
-    print(
-        "Target class distributions:"
-    )
+    print("Target class distributions:")
 
     for split_name, split in [
         (
@@ -566,24 +427,12 @@ def print_numerical_summary(
             test,
         ),
     ]:
-        counts = (
-            split[
-                TARGET_COLUMN
-            ]
-            .dropna()
-            .astype(int)
-            .value_counts()
-            .sort_index()
-        )
+        counts = split[TARGET_COLUMN].dropna().astype(int).value_counts().sort_index()
 
         print()
-        print(
-            split_name
-        )
+        print(split_name)
 
-        for class_index, class_name in enumerate(
-            CLASS_NAMES
-        ):
+        for class_index, class_name in enumerate(CLASS_NAMES):
             print(
                 f"  {class_name}:",
                 counts.get(
@@ -593,9 +442,7 @@ def print_numerical_summary(
             )
 
     print()
-    print(
-        "Largest OFR FSI observations:"
-    )
+    print("Largest OFR FSI observations:")
 
     print(
         data[
@@ -608,15 +455,11 @@ def print_numerical_summary(
             10,
             "OFR FSI",
         )
-        .to_string(
-            index=False
-        )
+        .to_string(index=False)
     )
 
     print()
-    print(
-        "Largest future stress increases in training:"
-    )
+    print("Largest future stress increases in training:")
 
     print(
         train[
@@ -630,50 +473,29 @@ def print_numerical_summary(
             10,
             FUTURE_CHANGE_COLUMN,
         )
-        .to_string(
-            index=False
-        )
+        .to_string(index=False)
     )
 
     print()
-    print(
-        "Strongest absolute training correlations:"
-    )
+    print("Strongest absolute training correlations:")
 
-    correlations = (
-        train[
-            FEATURE_COLUMNS
-        ]
-        .corr()
-    )
+    correlations = train[FEATURE_COLUMNS].corr()
 
     correlation_pairs = []
 
-    for first_index in range(
-        len(FEATURE_COLUMNS)
-    ):
+    for first_index in range(len(FEATURE_COLUMNS)):
         for second_index in range(
             first_index + 1,
             len(FEATURE_COLUMNS),
         ):
-            first_feature = (
-                FEATURE_COLUMNS[
-                    first_index
-                ]
-            )
+            first_feature = FEATURE_COLUMNS[first_index]
 
-            second_feature = (
-                FEATURE_COLUMNS[
-                    second_index
-                ]
-            )
+            second_feature = FEATURE_COLUMNS[second_index]
 
-            correlation = (
-                correlations.loc[
-                    first_feature,
-                    second_feature,
-                ]
-            )
+            correlation = correlations.loc[
+                first_feature,
+                second_feature,
+            ]
 
             correlation_pairs.append(
                 (
@@ -684,9 +506,7 @@ def print_numerical_summary(
             )
 
     correlation_pairs.sort(
-        key=lambda item: abs(
-            item[2]
-        ),
+        key=lambda item: abs(item[2]),
         reverse=True,
     )
 
@@ -695,10 +515,7 @@ def print_numerical_summary(
         second_feature,
         correlation,
     ) in correlation_pairs[:10]:
-        print(
-            f"  {first_feature} <-> {second_feature}: "
-            f"{correlation:.3f}"
-        )
+        print(f"  {first_feature} <-> {second_feature}: {correlation:.3f}")
 
 
 def run_eda() -> None:
@@ -728,17 +545,11 @@ def run_eda() -> None:
     )
 
     print()
-    print(
-        "=== CREATING FIGURES ==="
-    )
+    print("=== CREATING FIGURES ===")
 
-    plot_financial_stress_over_time(
-        data
-    )
+    plot_financial_stress_over_time(data)
 
-    plot_feature_correlations(
-        train
-    )
+    plot_feature_correlations(train)
 
     plot_future_change_distribution(
         train,
@@ -753,9 +564,7 @@ def run_eda() -> None:
     )
 
     print()
-    print(
-        "EDA completed."
-    )
+    print("EDA completed.")
 
 
 if __name__ == "__main__":

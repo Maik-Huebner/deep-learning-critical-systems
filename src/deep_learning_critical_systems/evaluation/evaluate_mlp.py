@@ -31,28 +31,14 @@ from deep_learning_critical_systems.training.trainer import (
     select_device,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-CHECKPOINT_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "checkpoints"
-    / "mlp_baseline.pt"
-)
+CHECKPOINT_PATH = PROJECT_ROOT / "artifacts" / "checkpoints" / "mlp_baseline.pt"
 
-METRICS_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-    / "mlp_test_metrics.json"
-)
+METRICS_PATH = PROJECT_ROOT / "artifacts" / "logs" / "mlp_test_metrics.json"
 
 CONFUSION_MATRIX_PATH = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-    / "mlp_confusion_matrix.png"
+    PROJECT_ROOT / "reports" / "figures" / "mlp_confusion_matrix.png"
 )
 
 BATCH_SIZE = 64
@@ -64,9 +50,7 @@ def load_model(
     """Load the best saved MLP model."""
 
     if not CHECKPOINT_PATH.exists():
-        raise FileNotFoundError(
-            f"MLP checkpoint not found: {CHECKPOINT_PATH}"
-        )
+        raise FileNotFoundError(f"MLP checkpoint not found: {CHECKPOINT_PATH}")
 
     checkpoint = torch.load(
         CHECKPOINT_PATH,
@@ -74,35 +58,17 @@ def load_model(
     )
 
     model = FinancialStressMLP(
-        sequence_length=checkpoint[
-            "sequence_length"
-        ],
-        feature_count=checkpoint[
-            "feature_count"
-        ],
-        hidden_size=checkpoint[
-            "hidden_size"
-        ],
-        second_hidden_size=checkpoint[
-            "second_hidden_size"
-        ],
-        class_count=checkpoint[
-            "class_count"
-        ],
-        dropout=checkpoint[
-            "dropout"
-        ],
+        sequence_length=checkpoint["sequence_length"],
+        feature_count=checkpoint["feature_count"],
+        hidden_size=checkpoint["hidden_size"],
+        second_hidden_size=checkpoint["second_hidden_size"],
+        class_count=checkpoint["class_count"],
+        dropout=checkpoint["dropout"],
     )
 
-    model.load_state_dict(
-        checkpoint[
-            "model_state_dict"
-        ]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
-    model.to(
-        device
-    )
+    model.to(device)
 
     model.eval()
 
@@ -124,30 +90,15 @@ def predict(
 
     with torch.no_grad():
         for features, batch_targets in test_loader:
-            features = features.to(
-                device
-            )
+            features = features.to(device)
 
-            logits = model(
-                features
-            )
+            logits = model(features)
 
-            batch_predictions = logits.argmax(
-                dim=1
-            )
+            batch_predictions = logits.argmax(dim=1)
 
-            predictions.extend(
-                batch_predictions
-                .cpu()
-                .numpy()
-                .tolist()
-            )
+            predictions.extend(batch_predictions.cpu().numpy().tolist())
 
-            targets.extend(
-                batch_targets
-                .numpy()
-                .tolist()
-            )
+            targets.extend(batch_targets.numpy().tolist())
 
     return (
         np.asarray(
@@ -209,19 +160,13 @@ def create_majority_baseline(
 
     class_counts = np.bincount(
         training_targets,
-        minlength=len(
-            CLASS_NAMES
-        ),
+        minlength=len(CLASS_NAMES),
     )
 
-    majority_class = int(
-        class_counts.argmax()
-    )
+    majority_class = int(class_counts.argmax())
 
     return np.full(
-        shape=len(
-            test_targets
-        ),
+        shape=len(test_targets),
         fill_value=majority_class,
         dtype=np.int64,
     )
@@ -243,9 +188,7 @@ def plot_confusion_matrix(
         ],
     )
 
-    figure, axis = plt.subplots(
-        figsize=(8, 7)
-    )
+    figure, axis = plt.subplots(figsize=(8, 7))
 
     image = axis.imshow(
         matrix,
@@ -257,17 +200,9 @@ def plot_confusion_matrix(
         ax=axis,
     )
 
-    axis.set_xticks(
-        np.arange(
-            len(CLASS_NAMES)
-        )
-    )
+    axis.set_xticks(np.arange(len(CLASS_NAMES)))
 
-    axis.set_yticks(
-        np.arange(
-            len(CLASS_NAMES)
-        )
-    )
+    axis.set_yticks(np.arange(len(CLASS_NAMES)))
 
     axis.set_xticklabels(
         CLASS_NAMES,
@@ -275,28 +210,16 @@ def plot_confusion_matrix(
         ha="right",
     )
 
-    axis.set_yticklabels(
-        CLASS_NAMES
-    )
+    axis.set_yticklabels(CLASS_NAMES)
 
-    axis.set_xlabel(
-        "Predicted class"
-    )
+    axis.set_xlabel("Predicted class")
 
-    axis.set_ylabel(
-        "True class"
-    )
+    axis.set_ylabel("True class")
 
-    axis.set_title(
-        "MLP Baseline - Test Confusion Matrix"
-    )
+    axis.set_title("MLP Baseline - Test Confusion Matrix")
 
-    for row in range(
-        matrix.shape[0]
-    ):
-        for column in range(
-            matrix.shape[1]
-        ):
+    for row in range(matrix.shape[0]):
+        for column in range(matrix.shape[1]):
             axis.text(
                 column,
                 row,
@@ -323,13 +246,9 @@ def plot_confusion_matrix(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
-    print(
-        f"Saved: {CONFUSION_MATRIX_PATH}"
-    )
+    print(f"Saved: {CONFUSION_MATRIX_PATH}")
 
 
 def save_metrics(
@@ -356,9 +275,7 @@ def save_metrics(
         + "\n"
     )
 
-    print(
-        f"Saved: {METRICS_PATH}"
-    )
+    print(f"Saved: {METRICS_PATH}")
 
 
 def print_metric_block(
@@ -368,16 +285,12 @@ def print_metric_block(
     """Print one compact metrics block."""
 
     print()
-    print(
-        name
-    )
+    print(name)
 
     print(
         "Accuracy:",
         round(
-            metrics[
-                "accuracy"
-            ],
+            metrics["accuracy"],
             4,
         ),
     )
@@ -385,9 +298,7 @@ def print_metric_block(
     print(
         "Macro Precision:",
         round(
-            metrics[
-                "macro_precision"
-            ],
+            metrics["macro_precision"],
             4,
         ),
     )
@@ -395,9 +306,7 @@ def print_metric_block(
     print(
         "Macro Recall:",
         round(
-            metrics[
-                "macro_recall"
-            ],
+            metrics["macro_recall"],
             4,
         ),
     )
@@ -405,9 +314,7 @@ def print_metric_block(
     print(
         "Macro F1:",
         round(
-            metrics[
-                "macro_f1"
-            ],
+            metrics["macro_f1"],
             4,
         ),
     )
@@ -429,9 +336,7 @@ def main() -> None:
 
     device = select_device()
 
-    model = load_model(
-        device
-    )
+    model = load_model(device)
 
     (
         test_targets,
@@ -442,11 +347,9 @@ def main() -> None:
         device=device,
     )
 
-    majority_predictions = (
-        create_majority_baseline(
-            training_targets=prepared_data.y_train,
-            test_targets=test_targets,
-        )
+    majority_predictions = create_majority_baseline(
+        training_targets=prepared_data.y_train,
+        test_targets=test_targets,
     )
 
     mlp_metrics = calculate_metrics(
@@ -460,9 +363,7 @@ def main() -> None:
     )
 
     print()
-    print(
-        "=== MLP TEST EVALUATION ==="
-    )
+    print("=== MLP TEST EVALUATION ===")
 
     print(
         "Device:",
@@ -471,9 +372,7 @@ def main() -> None:
 
     print(
         "Test samples:",
-        len(
-            test_targets
-        ),
+        len(test_targets),
     )
 
     print_metric_block(
@@ -487,9 +386,7 @@ def main() -> None:
     )
 
     print()
-    print(
-        "=== CLASSIFICATION REPORT ==="
-    )
+    print("=== CLASSIFICATION REPORT ===")
 
     print(
         classification_report(
@@ -501,18 +398,14 @@ def main() -> None:
         )
     )
 
-    print(
-        "=== CONFUSION MATRIX ==="
-    )
+    print("=== CONFUSION MATRIX ===")
 
     matrix = confusion_matrix(
         test_targets,
         mlp_predictions,
     )
 
-    print(
-        matrix
-    )
+    print(matrix)
 
     print()
 
@@ -527,9 +420,7 @@ def main() -> None:
     )
 
     print()
-    print(
-        "Evaluation completed."
-    )
+    print("Evaluation completed.")
 
 
 if __name__ == "__main__":

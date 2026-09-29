@@ -1,0 +1,46 @@
+[
+  {
+    "run_id": "L1",
+    "description": "Lower learning rate",
+    "seed_count": 3,
+    "seeds": [
+      42,
+      123,
+      2026
+    ],
+    "hidden_size": 64,
+    "classifier_hidden_size": 32,
+    "dropout": 0.2,
+    "learning_rate": 0.0005,
+    "mean_validation_macro_f1": 0.28745444400546466,
+    "std_validation_macro_f1": 0.07150119751235137,
+    "mean_validation_loss": 1.0635488930414876,
+    "std_validation_loss": 0.00513327273263187,
+    "mean_validation_accuracy": 0.4348019581664441,
+    "std_validation_accuracy": 0.01650844413973423,
+    "mean_recall_stress_increase": 0.04694835680751174,
+    "std_recall_stress_increase": 0.06639500292831432
+  },
+  {
+    "run_id": "L9",
+    "description": "Lower learning rate with higher classifier dropout",
+    "seed_count": 3,
+    "seeds": [
+      42,
+      123,
+      2026
+    ],
+    "hidden_size": 64,
+    "classifier_hidden_size": 32,
+    "dropout": 0.3,
+    "learning_rate": 0.0005,
+    "mean_validation_macro_f1": 0.2813453887406319,
+    "std_validation_macro_f1": 0.07681453145320581,
+    "mean_validation_loss": 1.0647026803899882,
+    "std_validation_loss": 0.004542452331590181,
+    "mean_validation_accuracy": 0.44014241210502897,
+    "std_validation_accuracy": 0.030762384795345713,
+    "mean_recall_stress_increase": 0.03442879499217528,
+    "std_recall_stress_increase": 0.04868966881409717
+  }
+]

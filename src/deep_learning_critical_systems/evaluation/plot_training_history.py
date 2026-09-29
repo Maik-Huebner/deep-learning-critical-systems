@@ -7,44 +7,24 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-HISTORY_PATH = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-    / "mlp_training_history.json"
-)
+HISTORY_PATH = PROJECT_ROOT / "artifacts" / "logs" / "mlp_training_history.json"
 
-FIGURES_DIR = (
-    PROJECT_ROOT
-    / "reports"
-    / "figures"
-)
+FIGURES_DIR = PROJECT_ROOT / "reports" / "figures"
 
-LOSS_FIGURE_PATH = (
-    FIGURES_DIR
-    / "mlp_training_loss.png"
-)
+LOSS_FIGURE_PATH = FIGURES_DIR / "mlp_training_loss.png"
 
-ACCURACY_FIGURE_PATH = (
-    FIGURES_DIR
-    / "mlp_training_accuracy.png"
-)
+ACCURACY_FIGURE_PATH = FIGURES_DIR / "mlp_training_accuracy.png"
 
 
 def load_training_history() -> dict:
     """Load the saved MLP training history."""
 
     if not HISTORY_PATH.exists():
-        raise FileNotFoundError(
-            f"Training history not found: {HISTORY_PATH}"
-        )
+        raise FileNotFoundError(f"Training history not found: {HISTORY_PATH}")
 
-    return json.loads(
-        HISTORY_PATH.read_text()
-    )
+    return json.loads(HISTORY_PATH.read_text())
 
 
 def plot_loss(
@@ -52,26 +32,18 @@ def plot_loss(
 ) -> None:
     """Plot training and validation loss across epochs."""
 
-    train_loss = history[
-        "train_loss"
-    ]
+    train_loss = history["train_loss"]
 
-    validation_loss = history[
-        "validation_loss"
-    ]
+    validation_loss = history["validation_loss"]
 
-    best_epoch = history[
-        "best_epoch"
-    ]
+    best_epoch = history["best_epoch"]
 
     epochs = range(
         1,
         len(train_loss) + 1,
     )
 
-    figure, axis = plt.subplots(
-        figsize=(10, 6)
-    )
+    figure, axis = plt.subplots(figsize=(10, 6))
 
     axis.plot(
         epochs,
@@ -91,32 +63,20 @@ def plot_loss(
         best_epoch,
         linestyle="--",
         linewidth=1.2,
-        label=(
-            f"Best Epoch ({best_epoch})"
-        ),
+        label=(f"Best Epoch ({best_epoch})"),
     )
 
-    axis.set_title(
-        "MLP Baseline - Training and Validation Loss"
-    )
+    axis.set_title("MLP Baseline - Training and Validation Loss")
 
-    axis.set_xlabel(
-        "Epoch"
-    )
+    axis.set_xlabel("Epoch")
 
-    axis.set_ylabel(
-        "Cross-Entropy Loss"
-    )
+    axis.set_ylabel("Cross-Entropy Loss")
 
-    axis.set_xticks(
-        list(epochs)
-    )
+    axis.set_xticks(list(epochs))
 
     axis.legend()
 
-    axis.grid(
-        alpha=0.3
-    )
+    axis.grid(alpha=0.3)
 
     figure.tight_layout()
 
@@ -126,13 +86,9 @@ def plot_loss(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
-    print(
-        f"Saved: {LOSS_FIGURE_PATH}"
-    )
+    print(f"Saved: {LOSS_FIGURE_PATH}")
 
 
 def plot_accuracy(
@@ -140,26 +96,18 @@ def plot_accuracy(
 ) -> None:
     """Plot training and validation accuracy across epochs."""
 
-    train_accuracy = history[
-        "train_accuracy"
-    ]
+    train_accuracy = history["train_accuracy"]
 
-    validation_accuracy = history[
-        "validation_accuracy"
-    ]
+    validation_accuracy = history["validation_accuracy"]
 
-    best_epoch = history[
-        "best_epoch"
-    ]
+    best_epoch = history["best_epoch"]
 
     epochs = range(
         1,
         len(train_accuracy) + 1,
     )
 
-    figure, axis = plt.subplots(
-        figsize=(10, 6)
-    )
+    figure, axis = plt.subplots(figsize=(10, 6))
 
     axis.plot(
         epochs,
@@ -179,26 +127,16 @@ def plot_accuracy(
         best_epoch,
         linestyle="--",
         linewidth=1.2,
-        label=(
-            f"Best Epoch ({best_epoch})"
-        ),
+        label=(f"Best Epoch ({best_epoch})"),
     )
 
-    axis.set_title(
-        "MLP Baseline - Training and Validation Accuracy"
-    )
+    axis.set_title("MLP Baseline - Training and Validation Accuracy")
 
-    axis.set_xlabel(
-        "Epoch"
-    )
+    axis.set_xlabel("Epoch")
 
-    axis.set_ylabel(
-        "Accuracy"
-    )
+    axis.set_ylabel("Accuracy")
 
-    axis.set_xticks(
-        list(epochs)
-    )
+    axis.set_xticks(list(epochs))
 
     axis.set_ylim(
         0.0,
@@ -207,9 +145,7 @@ def plot_accuracy(
 
     axis.legend()
 
-    axis.grid(
-        alpha=0.3
-    )
+    axis.grid(alpha=0.3)
 
     figure.tight_layout()
 
@@ -219,13 +155,9 @@ def plot_accuracy(
         bbox_inches="tight",
     )
 
-    plt.close(
-        figure
-    )
+    plt.close(figure)
 
-    print(
-        f"Saved: {ACCURACY_FIGURE_PATH}"
-    )
+    print(f"Saved: {ACCURACY_FIGURE_PATH}")
 
 
 def main() -> None:
@@ -238,9 +170,7 @@ def main() -> None:
 
     history = load_training_history()
 
-    print(
-        "=== MLP TRAINING PLOTS ==="
-    )
+    print("=== MLP TRAINING PLOTS ===")
 
     print(
         "Epochs trained:",
@@ -252,18 +182,12 @@ def main() -> None:
         history["best_epoch"],
     )
 
-    plot_loss(
-        history
-    )
+    plot_loss(history)
 
-    plot_accuracy(
-        history
-    )
+    plot_accuracy(history)
 
     print()
-    print(
-        "Training plots completed."
-    )
+    print("Training plots completed.")
 
 
 if __name__ == "__main__":

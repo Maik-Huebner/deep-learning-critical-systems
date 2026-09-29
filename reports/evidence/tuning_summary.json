@@ -1,0 +1,20 @@
+{
+  "selection_uses_test_set": false,
+  "selection_split": "validation",
+  "primary_metric": "macro_f1",
+  "tie_breaker": "validation_loss",
+  "lstm": {
+    "candidate_count": 12,
+    "selected_run": "L1",
+    "seed_stability_finalists": [
+      "L1",
+      "L9"
+    ],
+    "selected_seed": 42
+  },
+  "transformer": {
+    "candidate_count": 12,
+    "selected_run": "T1",
+    "selected_seed": 42
+  }
+}

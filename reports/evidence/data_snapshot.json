@@ -1,0 +1,49 @@
+{
+  "source_name": "Office of Financial Research Financial Stress Index",
+  "source_url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv",
+  "retrieved_for_reference_run": "2026-08-10",
+  "raw_file_sha256": "2d4a955fb0d72993fae454a731628d1deb4aca980a19121b989e80de09bf8478",
+  "analysis_end": "2026-08-05",
+  "rows": 6730,
+  "canonical_sha256": "38535be9eadd819493c3b77e11885deb14e344d97007551f87c76700cc829c9c",
+  "features": [
+    "OFR FSI",
+    "Credit",
+    "Equity valuation",
+    "Safe assets",
+    "Funding",
+    "Volatility",
+    "United States",
+    "Other advanced economies",
+    "Emerging markets"
+  ],
+  "window_size": 60,
+  "forecast_horizon": 5,
+  "split_boundaries": {
+    "train_end": "2016-12-31",
+    "validation_end": "2019-12-31",
+    "test_start": "2020-01-01"
+  },
+  "sequence_shapes": {
+    "train": [
+      4213,
+      60,
+      9
+    ],
+    "validation": [
+      749,
+      60,
+      9
+    ],
+    "test": [
+      1694,
+      60,
+      9
+    ]
+  },
+  "class_thresholds": {
+    "lower_training_tertile": -0.13879999999999995,
+    "upper_training_tertile": 0.08626666666666648
+  },
+  "data_distribution": "The source CSV is downloaded directly from OFR and is intentionally not redistributed by this repository. OFR source terms and upstream indicator rights remain separate from the MIT-licensed source code."
+}

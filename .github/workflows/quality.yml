@@ -1,0 +1,53 @@
+name: quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements/lock-py313.txt
+
+      - name: Install locked dependencies and package
+        run: |
+          python -m pip install pip==26.2.1
+          python -m pip install -r requirements/lock-py313.txt
+          python -m pip install --no-build-isolation --no-deps .
+          python -m pip check
+
+      - name: Lint and format check
+        run: make quality PYTHON=python
+
+      - name: Test
+        run: make test PYTHON=python
+
+      - name: Validate versioned evidence offline
+        run: make evidence-check PYTHON=python
+
+      - name: Audit repository hygiene
+        run: make audit PYTHON=python
+
+      - name: Build source and wheel distributions
+        run: make build PYTHON=python
+
+      - name: Wheel installation smoke test
+        run: |
+          python -m venv /tmp/dlcs-wheel-smoke
+          /tmp/dlcs-wheel-smoke/bin/python -m pip install --no-deps dist/*.whl
+          /tmp/dlcs-wheel-smoke/bin/python -c "from importlib.metadata import version; import deep_learning_critical_systems as p; assert p.__version__ == version('deep-learning-critical-systems')"

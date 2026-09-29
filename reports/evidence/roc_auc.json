@@ -1,0 +1,32 @@
+{
+  "analysis": "ROC-AUC-Auswertung der finalen Testmodelle",
+  "method": "Multi-Class One-vs-Rest ROC-AUC",
+  "test_samples": 1694,
+  "used_for_model_selection": false,
+  "results": {
+    "MLP": {
+      "macro_ovr_roc_auc": 0.5800622385699127,
+      "per_class_roc_auc": {
+        "Stressrückgang": 0.6295855368343377,
+        "Stabil": 0.5571833143345682,
+        "Stressanstieg": 0.5534178645408323
+      }
+    },
+    "LSTM": {
+      "macro_ovr_roc_auc": 0.5970014695931202,
+      "per_class_roc_auc": {
+        "Stressrückgang": 0.6333325134259828,
+        "Stabil": 0.5944320259808112,
+        "Stressanstieg": 0.5632398693725666
+      }
+    },
+    "Transformer": {
+      "macro_ovr_roc_auc": 0.6183430657342224,
+      "per_class_roc_auc": {
+        "Stressrückgang": 0.6862542532693806,
+        "Stabil": 0.6206644224375415,
+        "Stressanstieg": 0.5481105214957452
+      }
+    }
+  }
+}

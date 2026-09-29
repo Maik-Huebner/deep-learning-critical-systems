@@ -31,30 +31,15 @@ from deep_learning_critical_systems.training.trainer import (
     train_model,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-CHECKPOINT_DIR = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "checkpoints"
-)
+CHECKPOINT_DIR = PROJECT_ROOT / "artifacts" / "checkpoints"
 
-LOG_DIR = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "logs"
-)
+LOG_DIR = PROJECT_ROOT / "artifacts" / "logs"
 
-CHECKPOINT_PATH = (
-    CHECKPOINT_DIR
-    / "mlp_baseline.pt"
-)
+CHECKPOINT_PATH = CHECKPOINT_DIR / "mlp_baseline.pt"
 
-HISTORY_PATH = (
-    LOG_DIR
-    / "mlp_training_history.json"
-)
+HISTORY_PATH = LOG_DIR / "mlp_training_history.json"
 
 RANDOM_SEED = 42
 BATCH_SIZE = 64
@@ -79,17 +64,14 @@ def save_training_artifacts(
     )
 
     cpu_state_dict = {
-        name: parameter.detach().cpu()
-        for name, parameter in model.state_dict().items()
+        name: parameter.detach().cpu() for name, parameter in model.state_dict().items()
     }
 
     checkpoint = {
         "model_state_dict": cpu_state_dict,
         "model_name": "FinancialStressMLP",
         "sequence_length": WINDOW_SIZE,
-        "feature_count": len(
-            FEATURE_COLUMNS
-        ),
+        "feature_count": len(FEATURE_COLUMNS),
         "hidden_size": DEFAULT_HIDDEN_SIZE,
         "second_hidden_size": DEFAULT_SECOND_HIDDEN_SIZE,
         "class_count": 3,
@@ -129,34 +111,22 @@ def save_training_artifacts(
     )
 
     print()
-    print(
-        "Saved checkpoint:"
-    )
+    print("Saved checkpoint:")
 
-    print(
-        CHECKPOINT_PATH
-    )
+    print(CHECKPOINT_PATH)
 
     print()
-    print(
-        "Saved training history:"
-    )
+    print("Saved training history:")
 
-    print(
-        HISTORY_PATH
-    )
+    print(HISTORY_PATH)
 
 
 def main() -> None:
     """Train and save the MLP financial-stress baseline."""
 
-    set_seed(
-        RANDOM_SEED
-    )
+    set_seed(RANDOM_SEED)
 
-    prepared_data = (
-        prepare_ofr_data()
-    )
+    prepared_data = prepare_ofr_data()
 
     (
         train_loader,
@@ -169,36 +139,26 @@ def main() -> None:
 
     model = FinancialStressMLP(
         sequence_length=WINDOW_SIZE,
-        feature_count=len(
-            FEATURE_COLUMNS
-        ),
+        feature_count=len(FEATURE_COLUMNS),
     )
 
     device = select_device()
 
     parameter_count = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
 
     print()
-    print(
-        "=== MLP BASELINE EXPERIMENT ==="
-    )
+    print("=== MLP BASELINE EXPERIMENT ===")
 
     print(
         "Training samples:",
-        len(
-            prepared_data.y_train
-        ),
+        len(prepared_data.y_train),
     )
 
     print(
         "Validation samples:",
-        len(
-            prepared_data.y_validation
-        ),
+        len(prepared_data.y_validation),
     )
 
     print(
@@ -208,9 +168,7 @@ def main() -> None:
 
     print(
         "Feature count:",
-        len(
-            FEATURE_COLUMNS
-        ),
+        len(FEATURE_COLUMNS),
     )
 
     print(
@@ -236,9 +194,7 @@ def main() -> None:
     )
 
     print()
-    print(
-        "=== MLP TRAINING COMPLETE ==="
-    )
+    print("=== MLP TRAINING COMPLETE ===")
 
     print(
         "Best epoch:",
@@ -253,9 +209,7 @@ def main() -> None:
     print(
         "Best validation loss:",
         round(
-            min(
-                history.validation_loss
-            ),
+            min(history.validation_loss),
             4,
         ),
     )
@@ -263,9 +217,7 @@ def main() -> None:
     print(
         "Validation accuracy at best epoch:",
         round(
-            history.validation_accuracy[
-                history.best_epoch - 1
-            ],
+            history.validation_accuracy[history.best_epoch - 1],
             4,
         ),
     )

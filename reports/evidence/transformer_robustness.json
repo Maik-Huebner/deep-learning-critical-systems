@@ -1,0 +1,70 @@
+{
+  "model": "FinancialStressTransformer",
+  "selected_run": "T1",
+  "analysis_split": "held_out_test_set",
+  "random_seed": 42,
+  "method": "Gaussian noise added to standardized input features",
+  "interpretation": "This analysis is a controlled robustness stress test. It does not model one specific real-world market shock and is not used for further model tuning.",
+  "results": [
+    {
+      "noise_standard_deviation": 0.0,
+      "noise_percentage_of_standardized_unit": 0.0,
+      "accuracy": 0.4244391971664699,
+      "macro_precision": 0.406830471667681,
+      "macro_recall": 0.4240612615150359,
+      "macro_f1": 0.3737900937706465,
+      "recall_stress_decrease": 0.7090558766859345,
+      "recall_stable": 0.48119122257053293,
+      "recall_stress_increase": 0.08193668528864059,
+      "prediction_agreement_with_clean": 1.0
+    },
+    {
+      "noise_standard_deviation": 0.05,
+      "noise_percentage_of_standardized_unit": 5.0,
+      "accuracy": 0.42089728453364816,
+      "macro_precision": 0.40255702824875533,
+      "macro_recall": 0.4207514607211504,
+      "macro_f1": 0.36878845949189537,
+      "recall_stress_decrease": 0.7109826589595376,
+      "recall_stable": 0.47492163009404387,
+      "recall_stress_increase": 0.07635009310986965,
+      "prediction_agreement_with_clean": 0.9669421487603306
+    },
+    {
+      "noise_standard_deviation": 0.1,
+      "noise_percentage_of_standardized_unit": 10.0,
+      "accuracy": 0.42384887839433294,
+      "macro_precision": 0.4078394794412466,
+      "macro_recall": 0.42413776906612993,
+      "macro_f1": 0.37305338169798175,
+      "recall_stress_decrease": 0.7186897880539499,
+      "recall_stable": 0.4717868338557994,
+      "recall_stress_increase": 0.08193668528864059,
+      "prediction_agreement_with_clean": 0.9250295159386068
+    },
+    {
+      "noise_standard_deviation": 0.2,
+      "noise_percentage_of_standardized_unit": 20.0,
+      "accuracy": 0.4114521841794569,
+      "macro_precision": 0.41664826552401957,
+      "macro_recall": 0.4128927112520326,
+      "macro_f1": 0.3586663476935672,
+      "recall_stress_decrease": 0.720616570327553,
+      "recall_stable": 0.44357366771159873,
+      "recall_stress_increase": 0.074487895716946,
+      "prediction_agreement_with_clean": 0.8565525383707202
+    },
+    {
+      "noise_standard_deviation": 0.5,
+      "noise_percentage_of_standardized_unit": 50.0,
+      "accuracy": 0.3937426210153483,
+      "macro_precision": 0.41265754771708324,
+      "macro_recall": 0.3995781646729318,
+      "macro_f1": 0.32937362993899505,
+      "recall_stress_decrease": 0.7822736030828517,
+      "recall_stable": 0.36990595611285265,
+      "recall_stress_increase": 0.04655493482309125,
+      "prediction_agreement_with_clean": 0.7331759149940968
+    }
+  ]
+}

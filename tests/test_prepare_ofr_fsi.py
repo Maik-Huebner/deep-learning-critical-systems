@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from deep_learning_critical_systems.data.load_ofr_fsi import (
+    calculate_file_sha256,
+    verify_reference_raw_file,
+)
 from deep_learning_critical_systems.data.prepare_ofr_fsi import (
     ANALYSIS_END,
     FEATURE_COLUMNS,
@@ -122,65 +126,41 @@ def test_reference_snapshot_metadata_is_frozen():
 def test_analysis_snapshot_truncates_newer_observations():
     """Rows after the documented analysis cutoff must be excluded."""
 
-    data = clean_raw_data(
-        create_snapshot_test_dataframe()
-    )
+    data = clean_raw_data(create_snapshot_test_dataframe())
 
-    snapshot = select_analysis_snapshot(
-        data
-    )
+    snapshot = select_analysis_snapshot(data)
 
-    cutoff = pd.Timestamp(
-        ANALYSIS_END
-    )
+    cutoff = pd.Timestamp(ANALYSIS_END)
 
     assert snapshot["Date"].max() == cutoff
-    assert (
-        snapshot["Date"] <= cutoff
-    ).all()
+    assert (snapshot["Date"] <= cutoff).all()
     assert len(snapshot) < len(data)
 
 
 def test_analysis_snapshot_requires_documented_cutoff_date():
     """The snapshot must contain the documented final observation."""
 
-    data = clean_raw_data(
-        create_snapshot_test_dataframe()
-    )
+    data = clean_raw_data(create_snapshot_test_dataframe())
 
-    data = data.loc[
-        data["Date"] != pd.Timestamp(
-            ANALYSIS_END
-        )
-    ].copy()
+    data = data.loc[data["Date"] != pd.Timestamp(ANALYSIS_END)].copy()
 
     with pytest.raises(
         ValueError,
         match="analysis end date",
     ):
-        select_analysis_snapshot(
-            data
-        )
+        select_analysis_snapshot(data)
 
 
 def test_snapshot_hash_is_deterministic():
     """The canonical snapshot hash should be stable for identical data."""
 
-    data = clean_raw_data(
-        create_snapshot_test_dataframe()
-    )
+    data = clean_raw_data(create_snapshot_test_dataframe())
 
-    snapshot = select_analysis_snapshot(
-        data
-    )
+    snapshot = select_analysis_snapshot(data)
 
-    first_hash = calculate_snapshot_sha256(
-        snapshot
-    )
+    first_hash = calculate_snapshot_sha256(snapshot)
 
-    second_hash = calculate_snapshot_sha256(
-        snapshot.copy()
-    )
+    second_hash = calculate_snapshot_sha256(snapshot.copy())
 
     assert first_hash == second_hash
     assert len(first_hash) == 64
@@ -189,17 +169,11 @@ def test_snapshot_hash_is_deterministic():
 def test_reference_snapshot_verification_accepts_matching_data():
     """Matching row count and canonical hash should pass verification."""
 
-    data = clean_raw_data(
-        create_snapshot_test_dataframe()
-    )
+    data = clean_raw_data(create_snapshot_test_dataframe())
 
-    snapshot = select_analysis_snapshot(
-        data
-    )
+    snapshot = select_analysis_snapshot(data)
 
-    expected_hash = calculate_snapshot_sha256(
-        snapshot
-    )
+    expected_hash = calculate_snapshot_sha256(snapshot)
 
     verified_hash = verify_reference_snapshot(
         snapshot,
@@ -213,17 +187,11 @@ def test_reference_snapshot_verification_accepts_matching_data():
 def test_reference_snapshot_verification_rejects_wrong_row_count():
     """A changed snapshot length must fail provenance verification."""
 
-    data = clean_raw_data(
-        create_snapshot_test_dataframe()
-    )
+    data = clean_raw_data(create_snapshot_test_dataframe())
 
-    snapshot = select_analysis_snapshot(
-        data
-    )
+    snapshot = select_analysis_snapshot(data)
 
-    expected_hash = calculate_snapshot_sha256(
-        snapshot
-    )
+    expected_hash = calculate_snapshot_sha256(snapshot)
 
     with pytest.raises(
         ValueError,
@@ -239,17 +207,11 @@ def test_reference_snapshot_verification_rejects_wrong_row_count():
 def test_reference_snapshot_verification_rejects_modified_data():
     """A historical value change must fail canonical hash verification."""
 
-    data = clean_raw_data(
-        create_snapshot_test_dataframe()
-    )
+    data = clean_raw_data(create_snapshot_test_dataframe())
 
-    snapshot = select_analysis_snapshot(
-        data
-    )
+    snapshot = select_analysis_snapshot(data)
 
-    expected_hash = calculate_snapshot_sha256(
-        snapshot
-    )
+    expected_hash = calculate_snapshot_sha256(snapshot)
 
     modified_snapshot = snapshot.copy()
     modified_snapshot.loc[
@@ -271,90 +233,56 @@ def test_reference_snapshot_verification_rejects_modified_data():
 def test_chronological_split_has_no_overlap():
     """Train, validation and test periods must remain chronologically separate."""
 
-    data = clean_raw_data(
-        create_test_dataframe()
-    )
+    data = clean_raw_data(create_test_dataframe())
 
-    train, validation, test = split_chronologically(
-        data
-    )
+    train, validation, test = split_chronologically(data)
 
     assert train["Date"].max() < validation["Date"].min()
     assert validation["Date"].max() < test["Date"].min()
 
-    assert train["Date"].max() <= pd.Timestamp(
-        "2016-12-31"
-    )
+    assert train["Date"].max() <= pd.Timestamp("2016-12-31")
 
-    assert validation["Date"].max() <= pd.Timestamp(
-        "2019-12-31"
-    )
+    assert validation["Date"].max() <= pd.Timestamp("2019-12-31")
 
-    assert test["Date"].min() > pd.Timestamp(
-        "2019-12-31"
-    )
+    assert test["Date"].min() > pd.Timestamp("2019-12-31")
 
 
 def test_future_target_requires_complete_horizon():
     """The final five observations must not receive incomplete targets."""
 
-    data = clean_raw_data(
-        create_test_dataframe()
-    )
+    data = clean_raw_data(create_test_dataframe())
 
-    train, _, _ = split_chronologically(
-        data
-    )
+    train, _, _ = split_chronologically(data)
 
     train = add_future_stress_change(
         train,
         horizon=5,
     )
 
-    assert train[
-        "future_stress_change"
-    ].tail(5).isna().all()
+    assert train["future_stress_change"].tail(5).isna().all()
 
-    assert pd.notna(
-        train[
-            "future_stress_change"
-        ].iloc[-6]
-    )
+    assert pd.notna(train["future_stress_change"].iloc[-6])
 
 
 def test_thresholds_are_calculated_from_training_data():
     """Training quantiles should define the two class boundaries."""
 
-    data = clean_raw_data(
-        create_test_dataframe()
-    )
+    data = clean_raw_data(create_test_dataframe())
 
-    train, _, _ = split_chronologically(
-        data
-    )
+    train, _, _ = split_chronologically(data)
 
     train = add_future_stress_change(
         train,
         horizon=5,
     )
 
-    low_threshold, high_threshold = (
-        calculate_training_thresholds(
-            train
-        )
-    )
+    low_threshold, high_threshold = calculate_training_thresholds(train)
 
-    valid_changes = train[
-        "future_stress_change"
-    ].dropna()
+    valid_changes = train["future_stress_change"].dropna()
 
-    expected_low = valid_changes.quantile(
-        1 / 3
-    )
+    expected_low = valid_changes.quantile(1 / 3)
 
-    expected_high = valid_changes.quantile(
-        2 / 3
-    )
+    expected_high = valid_changes.quantile(2 / 3)
 
     assert np.isclose(
         low_threshold,
@@ -372,24 +300,16 @@ def test_thresholds_are_calculated_from_training_data():
 def test_target_classes_are_valid():
     """Every valid target must belong to one of the three project classes."""
 
-    data = clean_raw_data(
-        create_test_dataframe()
-    )
+    data = clean_raw_data(create_test_dataframe())
 
-    train, _, _ = split_chronologically(
-        data
-    )
+    train, _, _ = split_chronologically(data)
 
     train = add_future_stress_change(
         train,
         horizon=5,
     )
 
-    low_threshold, high_threshold = (
-        calculate_training_thresholds(
-            train
-        )
-    )
+    low_threshold, high_threshold = calculate_training_thresholds(train)
 
     train = add_target_classes(
         train,
@@ -397,31 +317,19 @@ def test_target_classes_are_valid():
         high_threshold,
     )
 
-    valid_targets = train[
-        "target"
-    ].dropna()
+    valid_targets = train["target"].dropna()
 
-    assert set(
-        valid_targets.unique()
-    ).issubset(
-        {0, 1, 2}
-    )
+    assert set(valid_targets.unique()).issubset({0, 1, 2})
 
-    assert train[
-        "target"
-    ].tail(5).isna().all()
+    assert train["target"].tail(5).isna().all()
 
 
 def test_scaler_is_fit_only_on_training_data():
     """Scaler statistics must come exclusively from the training split."""
 
-    data = clean_raw_data(
-        create_test_dataframe()
-    )
+    data = clean_raw_data(create_test_dataframe())
 
-    train, validation, test = split_chronologically(
-        data
-    )
+    train, validation, test = split_chronologically(data)
 
     (
         train_scaled,
@@ -434,11 +342,7 @@ def test_scaler_is_fit_only_on_training_data():
         test,
     )
 
-    expected_training_mean = (
-        train[FEATURE_COLUMNS]
-        .mean()
-        .to_numpy()
-    )
+    expected_training_mean = train[FEATURE_COLUMNS].mean().to_numpy()
 
     assert np.allclose(
         scaler.mean_,
@@ -506,13 +410,9 @@ def test_create_sequences_has_correct_shape():
         n_features,
     )
 
-    assert y.shape == (
-        expected_samples,
-    )
+    assert y.shape == (expected_samples,)
 
-    assert sample_dates.shape == (
-        expected_samples,
-    )
+    assert sample_dates.shape == (expected_samples,)
 
     assert X.dtype == np.float32
     assert y.dtype == np.int64
@@ -623,3 +523,15 @@ def test_sequences_with_history_use_only_past_context():
         X[1][-1],
         current_features[1],
     )
+
+
+def test_raw_file_hash_helper_and_reference_guard(tmp_path):
+    """Raw provenance checks must reject files unlike the reference snapshot."""
+
+    raw_file = tmp_path / "ofr_fsi.csv"
+    raw_file.write_bytes(b"Date,OFR FSI\n2020-01-01,0.0\n")
+
+    assert len(calculate_file_sha256(raw_file)) == 64
+
+    with pytest.raises(ValueError, match="does not match"):
+        verify_reference_raw_file(raw_file)

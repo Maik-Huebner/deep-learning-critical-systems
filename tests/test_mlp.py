@@ -20,9 +20,7 @@ def test_mlp_returns_correct_output_shape():
         dtype=torch.float32,
     )
 
-    outputs = model(
-        inputs
-    )
+    outputs = model(inputs)
 
     assert outputs.shape == (
         16,
@@ -42,9 +40,7 @@ def test_mlp_output_is_float_tensor():
         dtype=torch.float32,
     )
 
-    outputs = model(
-        inputs
-    )
+    outputs = model(inputs)
 
     assert outputs.dtype == torch.float32
 
@@ -66,9 +62,7 @@ def test_mlp_supports_different_batch_sizes():
             dtype=torch.float32,
         )
 
-        outputs = model(
-            inputs
-        )
+        outputs = model(inputs)
 
         assert outputs.shape == (
             batch_size,
@@ -91,9 +85,7 @@ def test_mlp_rejects_two_dimensional_input():
         ValueError,
         match="batch_size, sequence_length, feature_count",
     ):
-        model(
-            invalid_inputs
-        )
+        model(invalid_inputs)
 
 
 def test_mlp_rejects_wrong_sequence_length():
@@ -114,9 +106,7 @@ def test_mlp_rejects_wrong_sequence_length():
         ValueError,
         match="sequence length",
     ):
-        model(
-            invalid_inputs
-        )
+        model(invalid_inputs)
 
 
 def test_mlp_rejects_wrong_feature_count():
@@ -137,9 +127,7 @@ def test_mlp_rejects_wrong_feature_count():
         ValueError,
         match="feature count",
     ):
-        model(
-            invalid_inputs
-        )
+        model(invalid_inputs)
 
 
 def test_mlp_rejects_invalid_configuration():
@@ -200,16 +188,11 @@ def test_mlp_has_trainable_parameters():
     model = FinancialStressMLP()
 
     trainable_parameters = [
-        parameter
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter for parameter in model.parameters() if parameter.requires_grad
     ]
 
     assert trainable_parameters
 
-    parameter_count = sum(
-        parameter.numel()
-        for parameter in trainable_parameters
-    )
+    parameter_count = sum(parameter.numel() for parameter in trainable_parameters)
 
     assert parameter_count == 77699

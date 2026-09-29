@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this research prototype, please cite the repository."
+title: "Deep Learning for Critical Systems: Financial Stress Regime Forecasting"
+type: software
+authors:
+  - family-names: "Hübner"
+    given-names: "Maik"
+version: 1.0.1
+date-released: 2026-09-29
+repository-code: "https://github.com/Maik-Huebner/deep-learning-critical-systems"
+license: MIT
