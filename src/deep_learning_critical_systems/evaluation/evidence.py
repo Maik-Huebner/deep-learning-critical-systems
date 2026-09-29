@@ -5,12 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-EVIDENCE_DIRECTORY = PROJECT_ROOT / "reports" / "evidence"
 
 EVIDENCE_FILES = (
     "data_snapshot.json",
@@ -215,8 +213,13 @@ def validate_final_metrics(payload: dict[str, Any]) -> None:
         )
 
 
-def validate_manifest(evidence_directory: Path = EVIDENCE_DIRECTORY) -> None:
+def validate_manifest(evidence_directory: Path) -> None:
     """Verify that every evidence file matches the versioned manifest."""
+
+    if not evidence_directory.is_dir():
+        raise FileNotFoundError(
+            f"Evidence directory not found: {evidence_directory.resolve()}"
+        )
 
     manifest_path = evidence_directory / "manifest.json"
     manifest = load_json(manifest_path)
@@ -233,7 +236,7 @@ def validate_manifest(evidence_directory: Path = EVIDENCE_DIRECTORY) -> None:
         )
 
 
-def verify_evidence(evidence_directory: Path = EVIDENCE_DIRECTORY) -> EvidenceAudit:
+def verify_evidence(evidence_directory: Path) -> EvidenceAudit:
     """Validate the complete evidence bundle and cross-file invariants."""
 
     validate_manifest(evidence_directory)
@@ -287,10 +290,10 @@ def verify_evidence(evidence_directory: Path = EVIDENCE_DIRECTORY) -> EvidenceAu
     )
 
 
-def main() -> None:
+def main(evidence_directory: Path) -> None:
     """Run the offline evidence audit."""
 
-    result = verify_evidence()
+    result = verify_evidence(evidence_directory)
     print(
         f"Evidence audit passed: {result.files_checked} files, "
         f"{result.test_samples} held-out samples, {', '.join(result.models)}."
@@ -298,4 +301,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("evidence_directory", type=Path)
+    main(parser.parse_args().evidence_directory)

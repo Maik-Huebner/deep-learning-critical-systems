@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import json
 import shutil
+from pathlib import Path
 
 import pytest
 
 from deep_learning_critical_systems.evaluation.evidence import (
-    EVIDENCE_DIRECTORY,
     calculate_sha256,
     load_json,
     validate_final_metrics,
     verify_evidence,
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+EVIDENCE_DIRECTORY = REPO_ROOT / "reports" / "evidence"
 
 
 def update_manifest_hash(evidence_directory, file_name: str) -> None:
@@ -29,11 +32,28 @@ def update_manifest_hash(evidence_directory, file_name: str) -> None:
 
 
 def test_versioned_evidence_bundle_is_internally_consistent() -> None:
-    result = verify_evidence()
+    result = verify_evidence(EVIDENCE_DIRECTORY)
 
     assert result.files_checked == 8
     assert result.test_samples == 1694
     assert result.models == ("MLP", "LSTM", "Transformer")
+
+
+def test_explicit_evidence_path_is_independent_of_current_directory(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = verify_evidence(EVIDENCE_DIRECTORY)
+
+    assert result.test_samples == 1694
+
+
+def test_missing_evidence_directory_has_clear_error(tmp_path) -> None:
+    missing_directory = tmp_path / "missing-evidence"
+
+    with pytest.raises(FileNotFoundError, match="Evidence directory not found"):
+        verify_evidence(missing_directory)
 
 
 def test_published_metrics_match_confusion_matrices() -> None:

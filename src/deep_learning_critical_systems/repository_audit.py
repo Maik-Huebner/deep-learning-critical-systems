@@ -7,7 +7,6 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MAX_TRACKED_FILE_BYTES = 5 * 1024 * 1024
 
 FORBIDDEN_PARTS = {
@@ -40,7 +39,7 @@ class AuditFinding:
     reason: str
 
 
-def tracked_files(root: Path = PROJECT_ROOT) -> list[str]:
+def tracked_files(root: Path) -> list[str]:
     """Return tracked and non-ignored repository files from the working tree."""
 
     result = subprocess.run(
@@ -91,7 +90,7 @@ def audit_paths(root: Path, paths: list[str]) -> list[AuditFinding]:
     return findings
 
 
-def audit_repository(root: Path = PROJECT_ROOT) -> list[AuditFinding]:
+def audit_repository(root: Path) -> list[AuditFinding]:
     """Audit tracked and prospective repository contents.
 
     This narrow guard catches common accidental commits. It is not a replacement
@@ -101,10 +100,10 @@ def audit_repository(root: Path = PROJECT_ROOT) -> list[AuditFinding]:
     return audit_paths(root, tracked_files(root))
 
 
-def main() -> int:
+def main(root: Path) -> int:
     """Print findings and return a process-compatible status code."""
 
-    findings = audit_repository()
+    findings = audit_repository(root)
     if findings:
         print("Repository audit failed:")
         for finding in findings:
@@ -119,4 +118,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(
+        "Use scripts/audit_repository.py with an explicit repository path."
+    )

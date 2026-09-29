@@ -8,20 +8,18 @@ from typing import Any
 import matplotlib.pyplot as plt
 
 from deep_learning_critical_systems.evaluation.evidence import (
-    EVIDENCE_DIRECTORY,
     load_json,
     verify_evidence,
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-FIGURE_PATH = PROJECT_ROOT / "reports" / "figures" / "model_comparison.png"
 
-
-def load_comparison_data() -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def load_comparison_data(
+    evidence_directory: Path,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Load model and baseline results from the audited evidence bundle."""
 
-    verify_evidence()
-    payload = load_json(EVIDENCE_DIRECTORY / "final_metrics.json")
+    verify_evidence(evidence_directory)
+    payload = load_json(evidence_directory / "final_metrics.json")
     models = [
         {"model": model_name, **model_result["metrics"]}
         for model_name, model_result in payload["models"].items()
@@ -51,7 +49,7 @@ def print_results(models: list[dict[str, Any]], baseline: dict[str, Any]) -> Non
 def create_comparison_plot(
     models: list[dict[str, Any]],
     baseline: dict[str, Any],
-    output_path: Path = FIGURE_PATH,
+    output_path: Path,
 ) -> None:
     """Create a grouped comparison plot for the three neural models."""
 
@@ -110,14 +108,16 @@ def create_comparison_plot(
     print(f"Saved: {output_path}")
 
 
-def main() -> None:
+def main(evidence_directory: Path, output_path: Path) -> None:
     """Validate evidence and regenerate the final comparison figure."""
 
-    models, baseline = load_comparison_data()
+    models, baseline = load_comparison_data(evidence_directory)
     print_results(models, baseline)
-    create_comparison_plot(models, baseline)
+    create_comparison_plot(models, baseline, output_path)
     print("\nModel comparison completed from versioned evidence.")
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(
+        "Use scripts/reproduce_evidence.py so repository paths are explicit."
+    )

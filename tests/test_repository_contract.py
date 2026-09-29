@@ -2,12 +2,10 @@
 
 from pathlib import Path
 
-from deep_learning_critical_systems.evaluation.evidence import (
-    EVIDENCE_DIRECTORY,
-    load_json,
-)
+from deep_learning_critical_systems.evaluation.evidence import load_json
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+EVIDENCE_DIRECTORY = PROJECT_ROOT / "reports" / "evidence"
 
 
 def test_readme_final_table_matches_versioned_evidence() -> None:
